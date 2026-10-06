@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>橘泉智养 · 慢病诊疗方案推荐系统</title>
+    <link rel="preload" href="/fonts/material-symbols-outlined-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+  </head>
+  <body>
+    <!-- 首帧防闪（FOUC）：React 挂载前同步落 data-theme 与字号档 class，避免夜阑首帧闪石墨。
+         口径与 src/stores/settings.ts 完全一致：主题键 cdhcprs_theme（合法值 graphite/paper/spring/night，
+         旧值 modern→graphite、tcm→spring，缺省 graphite，见 THEME_LEGACY_MAP/getInitialThemeMode）；
+         字号键 cdhcprs_font_size_mode（large/extra-large → html.large-font-mode / html.extra-large-font-mode，
+         见 applyThemeAndFont 的 class 名）。阻塞内联脚本，localStorage 不可用时保持默认石墨浅色首帧。 -->
+    <script>
+      (function () {
+        try {
+          var THEMES = ['graphite', 'paper', 'spring', 'night']
+          var LEGACY = { modern: 'graphite', tcm: 'spring' }
+          var html = document.documentElement
+          var theme = localStorage.getItem('cdhcprs_theme')
+          if (THEMES.indexOf(theme) === -1) theme = (theme && LEGACY[theme]) || 'graphite'
+          html.dataset.theme = theme
+          var font = localStorage.getItem('cdhcprs_font_size_mode')
+          if (font === 'large') html.classList.add('large-font-mode')
+          if (font === 'extra-large') html.classList.add('extra-large-font-mode')
+        } catch (e) {
+          /* localStorage 受限（如隐私模式策略）时静默降级为默认石墨 */
+        }
+      })()
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

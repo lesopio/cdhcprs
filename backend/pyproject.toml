@@ -1,0 +1,21 @@
+[project]
+name = "cdhcprs-backend"
+version = "0.1.0"
+description = "慢性病诊疗方案推荐系统 - 后端服务"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "bcrypt>=4",
+    "fastapi>=0.118.0",
+    "httpx>=0.28.1",
+    "openai>=1.109.1",
+    "pydantic>=2.11.9",
+    "pydantic-settings>=2.11.0",
+    "python-jose[cryptography]>=3.5.0",
+    "python-multipart>=0.0.20",
+    "sqlalchemy>=2.0.43",
+    "uvicorn[standard]>=0.37.0",
+]
+
+[tool.uv]
+dev-dependencies = []

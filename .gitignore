@@ -1,0 +1,100 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Environment variables
+.env
+.env.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Frontend build
+frontend/dist/
+frontend/.nuxt/
+frontend/.output/
+frontend/.cache/
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# OS
+Thumbs.db
+
+# vscode插件
+.history/
+.augment/
+项目开发指南.md
+
+.docs/*.pdf
+# === 开源仓库清理（2026-10-02）：敏感物与本地开发记录不入库 ===
+# 数据库 WAL/SHM 伴生文件（*.db 不覆盖它们）
+*.db-wal
+*.db-shm
+*.db-journal
+# 开发工作日志（含服务器/账号痕迹，仅本地）
+codex-work.md
+backend-dev.log
+# 部署工件（含真实服务器 IP 与运维细节；deploy/README.md 部署要点已并入主 README）
+deploy/
+# 旧版 Vue 前端（已由 frontend-react 取代，57MB 历史快照）
+frontend/
+# 本机 junction 与工作流草稿
+.zcode/

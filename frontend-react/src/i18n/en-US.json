@@ -1,0 +1,353 @@
+{
+  "common": {
+    "appName": "Chronic Disease Care Assistant",
+    "menu": "Menu",
+    "brandTagline": "Oriental Wellness Copilot",
+    "actions": {
+      "refresh": "Refresh",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "view": "View",
+      "close": "Close",
+      "edit": "Edit",
+      "confirm": "Confirm",
+      "test": "Test Connection",
+      "fetchModels": "Fetch Models",
+      "new": "New",
+      "back": "Back",
+      "logout": "Sign out"
+    },
+    "status": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "banned": "Banned",
+      "normal": "Normal",
+      "warning": "Warning",
+      "success": "Success",
+      "error": "Error"
+    }
+  },
+  "language": {
+    "zhCN": "中文",
+    "enUS": "English"
+  },
+  "home": {
+    "nav": {
+      "home": "Home",
+      "features": "Features",
+      "about": "About",
+      "login": "Login",
+      "register": "Register"
+    },
+    "hero": {
+      "title": "Chronic Disease Care Assistant",
+      "subtitle": "LLM-powered consultation platform delivering professional guidance for chronic conditions",
+      "cta": "Login"
+    },
+    "features": {
+      "title": "Key Capabilities",
+      "cards": {
+        "chat": {
+          "title": "Intelligent Dialogue",
+          "description": "LLM-based real-time consultations tailored to chronic disease scenarios"
+        },
+        "plan": {
+          "title": "Personalized Plans",
+          "description": "Generate treatment suggestions aligned with patient history and symptoms"
+        },
+        "analysis": {
+          "title": "Data Insights",
+          "description": "Holistic data analytics that surface actionable wellness advice"
+        },
+        "privacy": {
+          "title": "Privacy First",
+          "description": "Enterprise-grade encryption and access control for sensitive data"
+        },
+        "service": {
+          "title": "Always Online",
+          "description": "24/7 availability so patients can reach help whenever they need"
+        },
+        "reliable": {
+          "title": "Clinically Informed",
+          "description": "Grounded in reputable medical knowledge bases to ensure reliability"
+        }
+      }
+    },
+    "about": {
+      "title": "About",
+      "heading": "A Dedicated Platform for Chronic Care",
+      "description1": "We blend cutting-edge language models with traditional Chinese medicine aesthetics to create an engaging consultation experience.",
+      "description2": "The interface keeps the warm yellow palette of classical medicine while delivering modern usability and clarity.",
+      "more": "Learn more"
+    },
+    "footer": {
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Use"
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "sidebarTagline": "Oriental Wellness Copilot",
+    "newConversation": "New Conversation",
+    "refresh": "Refresh",
+    "patientProfile": "Consultation Profile",
+    "patientProfileHint": "Completing the profile helps the model respond more precisely",
+    "fillInfo": "Fill in now",
+    "updateInfo": "Update profile",
+    "infoDialogTitle": "Consultation Profile",
+    "age": "Age",
+    "gender": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderOther": "Other",
+    "chiefComplaint": "Chief concern",
+    "chiefComplaintPlaceholder": "Describe your symptoms or questions",
+    "mainSymptom": "Main Symptoms",
+    "mainSymptomPlaceholder": "Please describe your main symptoms",
+    "medicalHistory": "Medical History",
+    "medicalHistoryPlaceholder": "Describe your medical history (optional)",
+    "allergies": "Allergies",
+    "allergiesPlaceholder": "List any drug or food allergies (optional)",
+    "agePlaceholder": "Enter your age",
+    "skipForm": "Skip",
+    "submitInfo": "Submit",
+    "questionPlaceholder": "Ask your question here — more detail brings better answers",
+    "send": "Send",
+    "infoSaved": "Profile updated. The next message will include refreshed details.",
+    "infoSkip": "Not now",
+    "infoClear": "Clear",
+    "infoSave": "Save profile",
+    "conversationDisabled": "This conversation is disabled",
+    "conversationDisabledDetail": "The model settings have been changed by an administrator. This conversation can no longer be used. Please create a new conversation to continue.",
+    "createNewConversation": "Create New Conversation",
+    "modelUpdatedNotice": "The system model has been updated. This conversation is now disabled. Please create a new conversation to continue.",
+    "welcomeTitle": "Welcome to the Chronic Disease Care Assistant",
+    "welcomeSubtitle": "Create a new session and complete your profile to start consulting.",
+    "userMenu": {
+      "profile": "Profile",
+      "admin": "Admin console",
+      "logout": "Sign out"
+    },
+    "ageError": "Please enter an integer between 0 and 120",
+    "chiefComplaintError": "Please provide at least 4 characters",
+    "assistantLabel": "Assistant",
+    "userLabel": "User",
+    "diseaseHistory": "Disease History",
+    "recentSymptoms": "Recent Symptoms",
+    "tcmSyndrome": "TCM Syndrome",
+    "tcmSyndromeHint": "Inferred from symptoms for AI reference"
+  },
+  "admin": {
+    "title": "Admin Console",
+    "subtitle": "Oversee users, dialogues, and LLM connectivity for a healthy platform",
+    "menu": {
+      "users": "Users",
+      "conversations": "Dialogs",
+      "settings": "Settings"
+    },
+    "users": {
+      "title": "User Directory",
+      "description": "Review user status and enforce bans, reinstatements, or removals",
+      "id": "ID",
+      "username": "Username",
+      "role": "Role",
+      "status": "Status",
+      "createdAt": "Joined",
+      "ban": "Ban",
+      "unban": "Unban",
+      "delete": "Delete",
+      "banSuccess": "User has been banned",
+      "unbanSuccess": "User unbanned successfully"
+    },
+    "conversations": {
+      "title": "Conversation Monitor",
+      "description": "Inspect and moderate every conversation on the platform",
+      "view": "View",
+      "delete": "Delete",
+      "createdAt": "Created At",
+      "userId": "User ID",
+      "status": "Status",
+      "deleteConfirm": "Are you sure you want to delete this conversation?",
+      "dialogTitle": "Conversation · {title}",
+      "empty": "No messages yet"
+    },
+    "settings": {
+      "title": "Model & Site Settings",
+      "basic": "Basic information",
+      "llm": "LLM configuration",
+      "provider": "Provider",
+      "apiKey": "API Key",
+      "baseUrl": "Base URL",
+      "modelId": "Model ID",
+      "systemPrompt": "System prompt",
+      "websiteName": "Site name",
+      "warning": "Updating model settings will disable existing conversations",
+      "providerOpenAIfulHint": "OpenAIful requires an explicit Base URL",
+      "description": "Configure site information and LLM connectivity",
+      "websiteNamePlaceholder": "Enter the site name",
+      "systemPromptPlaceholder": "The system prompt is prepended to every session",
+      "apiKeyPlaceholder": "Enter the API key",
+      "baseUrlPlaceholder": "Enter the base URL, e.g. https://api.example.com/v1",
+      "modelPlaceholder": "Select or enter a model ID",
+      "websiteLogo": "Website Logo",
+      "websiteLogoPlaceholder": "Enter the logo image URL",
+      "uploadLogo": "Upload Logo",
+      "uploading": "Uploading...",
+      "logoTips": "Supports PNG, JPG, GIF, SVG, WebP formats, max 2MB",
+      "logoUploadSuccess": "Logo uploaded successfully",
+      "logoTypeError": "Unsupported file format. Please upload an image file",
+      "logoSizeError": "File size must not exceed 2MB",
+      "modelName": "Model Name",
+      "modelNamePlaceholder": "Display name for the model (optional)",
+      "modelRequired": "Please provide a model ID or model name",
+      "providerRequired": "Please select a provider",
+      "apiKeyRequired": "Please enter the API key",
+      "baseUrlRequired": "Please enter the base URL",
+      "baseUrlRequiredPlaceholder": "Enter the full base URL (e.g. https://api.example.com/v1)",
+      "websiteNameRequired": "Please enter the website name",
+      "systemPromptRequired": "Please enter the system prompt",
+      "largeFontScale": "Large Font Scale",
+      "largeFontScalePlaceholder": "Enter scale factor (e.g. 1.5 for 150%)",
+      "largeFontScaleTips": "Recommended range: 1.2 - 2.0"
+    },
+    "dialog": {
+      "conversationTitle": "Conversation",
+      "user": "User",
+      "assistant": "Assistant"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Login",
+      "register": "Create account",
+      "usernameRequired": "Please enter your username",
+      "passwordRequired": "Please enter your password"
+    },
+    "register": {
+      "title": "Create account",
+      "username": "Username (3-50 characters)",
+      "password": "Password (min. 6 characters)",
+      "submit": "Register",
+      "back": "Back to login",
+      "usernameRequired": "Please enter your username",
+      "passwordRequired": "Please enter your password",
+      "usernameRule": "Username must be 3-50 characters",
+      "passwordRule": "Password must be at least 6 characters"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "roleAdmin": "Administrator",
+    "roleUser": "Member",
+    "registeredAt": "Joined",
+    "changePassword": "Change password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "update": "Update password",
+    "passwordPlaceholder": "Enter a new password (min. 6 characters)",
+    "confirmPasswordPlaceholder": "Re-enter the new password",
+    "confirmPasswordRequired": "Please re-enter the new password"
+  },
+  "about": {
+    "title": "About",
+    "version": "Version",
+    "intro": "An LLM-powered consultation companion for chronic condition management",
+    "systemIntro": "We combine modern AI with trusted medical references to deliver meaningful care recommendations.",
+    "featureList": {
+      "auth": "Secure authentication and role-based permissions",
+      "chat": "LLM-driven conversations tailored to chronic care needs",
+      "plan": "Personalized plan recommendations based on patient context",
+      "admin": "Comprehensive admin toolbox for platform governance",
+      "security": "Robust encryption and privacy safeguards"
+    },
+    "disclaimer": "The information provided is for educational purposes only and is not a substitute for professional medical advice."
+  },
+  "messages": {
+    "logoutConfirm": "Are you sure you want to logout?",
+    "modelUpdate": "Model settings changed. Please start a new conversation.",
+    "needApiKey": "Please provide the API key first.",
+    "needBaseUrl": "OpenAIful requires a valid base URL.",
+    "fetchModelsSuccess": "Models retrieved successfully.",
+    "fetchModelsFail": "Failed to retrieve models. Please verify the configuration.",
+    "connectionTestFail": "Connection test failed.",
+    "settingsSaved": "Settings saved. Previous conversations were disabled.",
+    "conversationCreated": "Conversation created",
+    "deleteSuccess": "Conversation removed",
+    "sendFailed": "Message failed to send. Please try again.",
+    "selectConversationWarning": "Please select or create a conversation first.",
+    "needSelectConversation": "Please choose a conversation first.",
+    "deleteConversationConfirm": "Are you sure you want to delete this conversation?",
+    "confirmTitle": "Notice",
+    "loginSuccess": "Logged in successfully",
+    "loginFailed": "Login failed. Please try again.",
+    "registerSuccess": "Registration successful. Please login.",
+    "registerFailed": "Registration failed. Please try again.",
+    "profileUpdateSuccess": "Profile updated successfully",
+    "passwordMismatch": "The two passwords do not match",
+    "passwordUpdateSuccess": "Password updated successfully",
+    "banSuccess": "User banned successfully",
+    "unbanSuccess": "User unbanned successfully",
+    "deleteUserSuccess": "User removed successfully",
+    "loadUsersFailed": "Failed to load user list",
+    "loadConversationsFailed": "Failed to load conversations",
+    "fetchSettingsFailed": "Failed to load settings",
+    "fetchModelOptionsSuccess": "Model list retrieved successfully",
+    "fetchModelOptionsFailed": "Failed to retrieve model list",
+    "connectionTestSuccess": "Connection test succeeded",
+    "connectionTestFailed": "Connection test failed",
+    "passwordUpdateFailed": "Failed to update password, please try again",
+    "requestFailed": "Request failed",
+    "networkError": "Network error",
+    "deleteUserConfirm": "Are you sure you want to delete this user?",
+    "adminOnly": "Administrator privileges are required."
+  },
+  "statusMessages": {
+    "backendHealthy": "Backend healthy",
+    "backendUnhealthy": "Backend unavailable",
+    "backendOkDetail": "Backend service is responding correctly",
+    "backendErrorDetail": "Unable to reach the backend service. Please ensure it is running.",
+    "lastCheck": "Last check: {time}"
+  },
+  "largeFontMode": {
+    "label": "Large Font Mode",
+    "on": "On",
+    "off": "Off"
+  },
+  "theme": {
+    "modern": "Modern care",
+    "tcm": "TCM style",
+    "switchToModern": "Switch to modern medical theme",
+    "switchToTcm": "Switch to TCM theme"
+  },
+  "homeExtra": {
+    "badge": "Chronic care AI assistant",
+    "startNow": "Start consultation",
+    "registerNow": "Create health profile",
+    "previewTitle": "Today consultation",
+    "previewStatus": "Profile synced",
+    "step1": "Describe symptoms",
+    "step2": "Complete profile",
+    "step3": "Get suggestions",
+    "safetyNote": "AI suggestions are for health reference only and do not replace medical diagnosis."
+  },
+  "chatExtra": {
+    "profilePanelTitle": "Patient profile",
+    "profilePanelSubtitle": "Used to generate more relevant chronic care suggestions",
+    "noProfile": "No profile yet",
+    "editProfile": "Edit profile",
+    "selectedDiseases": "Selected diseases",
+    "selectedSymptoms": "Recent symptoms",
+    "emptyConversationHint": "Select or create a consultation to start recording your health question.",
+    "mobileConversations": "Conversations",
+    "mobileProfile": "Profile"
+  },
+  "authExtra": {
+    "heroTitle": "Turn chronic care questions into clear records",
+    "heroSubtitle": "Log in to save consultations, complete your health profile, and receive AI-assisted suggestions.",
+    "registerSubtitle": "Create an account to manage your chronic care consultation records."
+  }
+}

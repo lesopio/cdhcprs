@@ -1,0 +1,44 @@
+/* =========================================================================
+ * 字号三档无障碍模式（迁移自 Vue 版 global.css）
+ * 由 stores/settings.ts 在 <html> 上加减 class 触发；
+ * 三档都重新映射 --font-size-* 档位，组件用 var(--font-size-*) 即可自动缩放。
+ *
+ * 全局视觉放大（todo B）：
+ *  - normal 档基准随 tokens.css 上调（--font-size-base 16 → 20px，等效浏览器缩放 125%），
+ *    large / extra-large 档按同比例（1.25 倍，取整到 0.5px）平移，三档相对关系不变；
+ *  - 根字号绑定 --font-size-base：Tailwind 的 rem 工具类（text-* / p-* / rounded-*
+ *    等）随之整体缩放，三档对全站真实生效；tokens.css 里的 --font-size-* 仍是
+ *    唯一基准，此处不再另设第二套数值。
+ * ========================================================================= */
+
+/* 普通模式：根字号 = --font-size-base（tokens.css 默认 20px） */
+html { font-size: var(--font-size-base); }
+body { font-size: var(--font-size-base); }
+
+/* 大字模式 */
+html.large-font-mode {
+  --font-size-xs: 16.5px;
+  --font-size-sm: 19px;
+  --font-size-base: 21.5px;
+  --font-size-lg: 24px;
+  --font-size-xl: 27.5px;
+  --font-size-2xl: 32.5px;
+  --font-size-3xl: 40px;
+  --font-size-4xl: 50px;
+  overflow-x: hidden;
+}
+html.large-font-mode body { font-size: var(--font-size-base); }
+
+/* 超大字模式 */
+html.extra-large-font-mode {
+  --font-size-xs: 19px;
+  --font-size-sm: 22.5px;
+  --font-size-base: 26.5px;
+  --font-size-lg: 30px;
+  --font-size-xl: 35px;
+  --font-size-2xl: 41.5px;
+  --font-size-3xl: 49px;
+  --font-size-4xl: 60px;
+  overflow-x: hidden;
+}
+html.extra-large-font-mode body { font-size: var(--font-size-base); }

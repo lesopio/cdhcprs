@@ -1,0 +1,487 @@
+/* =========================================================================
+ * 四主题 token 系统（v4）—— 结构层 :root + 颜色层 [data-theme='…'] ×4
+ * 基准：docs/ui-spec-v4-themes.md §1（参考 vercel globals.css dark 段 / lobe-global.ts）。
+ *
+ * 分层与单一色源：
+ *  1) 结构层（:root）：圆角/间距/字号档位/字体族/缓动/过渡/浅色阴影族——与主题无关，
+ *     定义一次。唯一例外：night（夜阑）按规格在块内加深阴影与遮罩（照 vercel .dark）。
+ *  2) 颜色层：全部颜色 token 下沉到四个主题块，每块给齐全部颜色变量
+ *     （命名调色板 → 产品语义 → --color-* 别名 → 玻璃态），缺一个主题下就会漏色。
+ *     graphite 块写作 ":root, [data-theme='graphite']"：JS 挂载 data-theme 前的首帧
+ *     以石墨为默认底避免 FOUC，挂载后与显式选择器完全等价，非第二份定义。
+ *  3) globals.css 的 shadcn 槽位经 var() 回指本文件（var() 惰性解析，与加载次序无关；
+ *     main.tsx 中 tokens.css 在 globals.css 之后加载，同名变量以本文件为准）。
+ *     消费方式不变：组件继续 var(--color-*) / var(--paper) …；切主题 = 换 html[data-theme]。
+ *
+ * 四个功能彩位（链接/状态/危险）与品牌 symbol 逐主题：
+ *   graphite  链接 #2F6FA8 / 状态 #3D8A5F / 危险 #C0392B
+ *   paper     链接 #9A6B54 / 状态 #629A90 / 危险 #C0392B（檀色只作品牌 symbol）
+ *   spring    链接 #3271AE / 状态 #007175 / 危险 #C83C3C（青雘只作状态/进度小件）
+ *   night     链接 #7CA9D6 / 状态 #5FA97C / 危险 #E07B6C
+ * --tanse（品牌 symbol，logo/装饰图标）四主题恒值 #B26D5D；night 下对 #262626 底
+ * 对比 3.7:1，满足装饰性图形 ≥3:1（WCAG 1.4.11），刻意不随主题变化。
+ * --color-accent 四主题统一 var(--ink-strong)：该变量同时被实底强调钮
+ * （SeniorChat/About/Admin/Profile/IntakeOptions 的 background:var(--color-accent)）
+ * 与选中描边消费，规格要求主钮近黑/近黑蓝（paper/spring 明示「主钮用近黑」），
+ * 故不落檀色/青雘——规格用语「檀色只作品牌 symbol 与选中描边」「青雘可用」为用途限定。
+ * ========================================================================= */
+:root {
+  /* ===== 字号档位（由 font-size-modes.css 在 <html> 上覆盖） ==========
+   * 全局视觉放大：以 Vue 版 16px 基准档整体上调 1.25 倍（根字号 16 → 20px，
+   * 等效浏览器缩放 125%），档位间距按原比例保持协调。 */
+  --font-size-xs: 15px;
+  --font-size-sm: 17.5px;
+  --font-size-base: 20px;
+  --font-size-lg: 22.5px;
+  --font-size-xl: 25px;
+  --font-size-2xl: 30px;
+  --font-size-3xl: 37.5px;
+  --font-size-4xl: 50px;
+
+  /* 间距档位（同步微调约 1.08 倍、取整到 0.5px，节奏不变） */
+  --spacing-xs: 4.5px;
+  --spacing-sm: 8.5px;
+  --spacing-md: 13px;
+  --spacing-base: 17.5px;
+  --spacing-lg: 21.5px;
+  --spacing-xl: 26px;
+  --spacing-2xl: 34.5px;
+  --spacing-3xl: 43px;
+  --spacing-4xl: 52px;
+  --spacing-5xl: 69px;
+
+  /* 圆角档位（--radius 基准 10px 见 globals.css） */
+  --border-radius-none: 0;
+  --border-radius-sm: 4.5px;
+  --border-radius-base: 8.5px;
+  --border-radius-md: 11px;
+  --border-radius-lg: 13px;
+  --border-radius-xl: 17px;
+  --border-radius-full: 9999px;
+
+  /* 字体族 */
+  --font-family-base: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+                     "Helvetica Neue", Arial, "Noto Sans", "Microsoft YaHei", sans-serif;
+  --font-family-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC",
+                       "STSong", "SimSun", serif;
+  --font-sans: var(--font-family-base);
+  --font-serif: var(--font-family-serif);
+  --serif: var(--font-family-serif); /* 兼容别名：Home.tsx 等历史用法 var(--serif) */
+
+  /* 缓动（照 vercel tokens） */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* 过渡 */
+  --transition-fast: 150ms ease;
+  --transition-base: 220ms ease;
+  --transition-slow: 350ms ease;
+
+  /* ===== 浅色阴影族（结构层默认；night 在块内按 vercel .dark 加深） ===== */
+  --shadow: 0 7px 24px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 22px 54px rgba(0, 0, 0, 0.10);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 1px rgba(0, 0, 0, 0.03);
+  --shadow-float: 0 8px 24px -6px rgba(0, 0, 0, 0.10), 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  --shadow-composer: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-composer-focus: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.06);
+}
+
+/* =========================================================================
+ * graphite 石墨（默认，= v3 无彩中性产出原样搬入；:root 兜底首帧）
+ * 主底 #FAFAFA / 侧栏 #F7F7F7 / 卡 #FFFFFF / 墨 #1B1B1B / 描边 #E5E5E5
+ * ========================================================================= */
+:root,
+[data-theme='graphite'] {
+  color-scheme: light; /* 浅色主题：原生控件/滚动条按浅色渲染 */
+
+  /* 命名调色板（中性化后的色源；色名为遗留名） */
+  --jiaoyu: #F7F7F7;      /* 皦玉 → 浅表面/侧栏底 */
+  --jiliang: #EDEDED;     /* 吉量 → 选中/激活填充 */
+  --shaofen: #E5E5E5;     /* 韶粉 → hairline 描边 */
+  --shuangdi: #D4D4D4;    /* 霜地 → 强描边 */
+  --xiayue: #EDEDED;      /* 夏籥 → 浅强调填充 */
+  --zimoujin: #525252;    /* 紫磨金 → warning 中性化 */
+  --tanse: #B26D5D;       /* 檀色 → 品牌 symbol 专用，全站唯一品牌彩点 */
+  --zheluo: #3D3D3A;      /* 赭罗 → 强调深一档（主按钮 hover 同源） */
+  --huangdan: #C0392B;    /* 黄丹 → 危险主值 */
+  --luoshen: #A93226;     /* 洛神珠 → 危险 hover/深一档 */
+  --danhuo: #A93226;      /* 丹雘 → 危险深一档 */
+  --shuihuazhu: #8F2920;  /* 水华朱 → 危险最深档 */
+  --zhuzhu: #C0392B;      /* 朱磦（危险/急危主色） */
+  --qingming: #2F6FA8;    /* 青冥 → 链接蓝 */
+  --qinghuo: #3D8A5F;     /* 青雘 → 状态绿 */
+  --qinggua: #525252;     /* 青緺 → 文本次级 */
+  --qilin: #1B1B1B;       /* 骐驎 → 文本主色/主按钮底 */
+
+  /* 产品语义 */
+  --paper: #FAFAFA;               /* 主背景 */
+  --paper-2: var(--jiaoyu);       /* 侧栏/浅表面 */
+  --paper-3: var(--jiliang);      /* 选中/更深一档填充 */
+  --surface: #FFFFFF;             /* 卡片/弹层/composer */
+  --ink: var(--qinggua);          /* 文本次级 */
+  --ink-strong: var(--qilin);     /* 文本主色/近黑 */
+  --ink-soft: #8F8F8F;            /* 文本弱化（时间戳/占位/说明） */
+  --muted: #8F8F8F;               /* 文本弱化灰（Vue 版遗留名；shell.css/router/LargeFontSwitcher 消费） */
+  --muted-2: #B3B3B3;             /* 禁用文本 */
+  --line: var(--shaofen);         /* hairline 描边一律 1px */
+  --line-soft: #F0F0F0;           /* 更浅一档 hairline */
+  --line-strong: var(--shuangdi); /* 强描边 */
+  --accent: var(--ink-strong);    /* 强调/主按钮＝近黑 */
+  --accent-hover: #3D3D3A;        /* 主按钮 hover */
+  --accent-soft: #EDEDED;         /* 选中/激活填充、soft badge 底 */
+  --secondary: var(--accent-soft);/* shadcn secondary 表面 */
+  --secondary-soft: #F0F0F0;      /* 辅色族 soft */
+  --link: var(--qingming);        /* 链接蓝 */
+  --success: var(--qinghuo);      /* 状态绿 */
+  --success-soft: #EAF2ED;        /* 状态绿淡染 */
+  --warning: var(--zimoujin);     /* warning 中性化＝#525252 */
+  --user: #EDEDED;                /* 用户气泡 */
+
+  /* shadcn 补充槽位（globals.css 的字面值在首帧兜底，主题块内逐主题着色） */
+  --ring: #525252;                /* 聚焦环中性灰 */
+
+  /* --color-* 别名层（全站手写 CSS 消费最频繁的一层）
+   * --color-primarySoft = 幽灵 hover 填充（规格：rgba(0,0,0,0.05)，hover 黑 5%）。 */
+  --color-primary: var(--ink-strong);       /* 近黑（主按钮底色） */
+  --color-primaryLight: var(--xiayue);      /* 浅强调填充 */
+  --color-primaryDark: var(--zheluo);       /* 强调深一档 */
+  --color-primarySoft: rgba(0, 0, 0, 0.05); /* 幽灵 hover 圆角块 */
+  --color-accent: var(--ink-strong);        /* 近黑（选中描边/实底强调钮同源） */
+  --color-accentSoft: var(--accent-soft);   /* 选中/soft badge 底 */
+  --color-accentLight: var(--xiayue);
+  --color-accentHover: var(--accent-hover); /* 强调 hover */
+  --color-success: var(--qinghuo);
+  --color-warning: var(--zimoujin);
+  --color-danger: var(--zhuzhu);
+  --color-info: var(--muted);
+  --color-link: var(--qingming);
+  --color-bgPrimary: var(--paper);
+  --color-bgSecondary: var(--paper-2);
+  --color-bgTertiary: var(--paper-3);
+  --color-surface: var(--surface);
+  --color-surfaceMuted: var(--paper-2);
+  --color-textPrimary: var(--ink-strong);
+  --color-textSecondary: var(--ink);
+  --color-textTertiary: var(--ink-soft);
+  --color-textDisabled: #B3B3B3;
+  --color-borderPrimary: var(--line);
+  --color-borderSecondary: var(--line);
+  --color-borderLight: var(--line-soft);
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  --color-overlay: rgba(0, 0, 0, 0.32);     /* 遮罩（中性黑） */
+
+  /* 玻璃态（颜色层：底/描边随主题表面，night 随之翻暗） */
+  --glass-bg: rgba(255, 255, 255, 0.74);
+  --glass-bg-strong: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-shadow: 0 18px 44px rgba(0, 0, 0, 0.08);
+
+  /* 长辈模式光球三档亮色（SeniorChat 径向渐变：高光/中调/暗部）——石墨晨空蓝 */
+  /* 长辈模式光球六档（参考图蓝青色系）：顶淡蓝/主体天蓝/底部深蓝/青白光带/漂移暗斑/边缘紫晕 */
+  --senior-orb-top: #D9ECFC;
+  --senior-orb-mid: #A6CBF3;
+  --senior-orb-deep: #7FB4EE;
+  --senior-orb-glow: #DFF7FA;
+  --senior-orb-shade: #5F9FE8;
+  --senior-orb-rim: #BFCDF2;
+}
+
+/* =========================================================================
+ * paper 暖纸（Claude 式暖色克制版）
+ * 主底 #FAF9F5 / 侧栏 #F0EEE6 / 卡 #FFFFFF / 墨 #1F1E1D / 次级 #57534E /
+ * 弱化 #8A857C / 描边 #E7E4DB / 激活 #ECE9E1 / 气泡 #F0EEE6 /
+ * 主钮近黑 #1F1E1D，檀色只作品牌 symbol；链接 #9A6B54 / 状态 #629A90 / 危险 #C0392B
+ * ========================================================================= */
+[data-theme='paper'] {
+  color-scheme: light;
+
+  --jiaoyu: #F0EEE6;      /* 皦玉 → 暖纸侧栏底 */
+  --jiliang: #ECE9E1;     /* 吉量 → 激活/选中填充 */
+  --shaofen: #E7E4DB;     /* 韶粉 → hairline 描边 */
+  --shuangdi: #D8D4C8;    /* 霜地 → 强描边（暖灰深一档） */
+  --xiayue: #ECE9E1;      /* 夏籥 → 浅强调填充 */
+  --zimoujin: #57534E;    /* 紫磨金 → warning 中性化＝次级 */
+  --tanse: #B26D5D;       /* 檀色 → 品牌 symbol 专用（主钮不落檀色） */
+  --zheluo: #3B3835;      /* 赭罗 → 强调深一档（主按钮 hover） */
+  --huangdan: #C0392B;
+  --luoshen: #A93226;
+  --danhuo: #A93226;
+  --shuihuazhu: #8F2920;
+  --zhuzhu: #C0392B;      /* 危险与 graphite 同值 */
+  --qingming: #9A6B54;    /* 青冥位 → 暖调链接 */
+  --qinghuo: #629A90;     /* 青雘位 → 状态绿（暖调） */
+  --qinggua: #57534E;     /* 青緺位 → 文本次级 */
+  --qilin: #1F1E1D;       /* 骐驎位 → 文本主色/主按钮底（近黑） */
+
+  --paper: #FAF9F5;               /* 主背景 */
+  --paper-2: var(--jiaoyu);       /* 侧栏 #F0EEE6 */
+  --paper-3: var(--jiliang);      /* 选中/激活 #ECE9E1 */
+  --surface: #FFFFFF;             /* 卡片纯白 */
+  --ink: var(--qinggua);          /* 次级 #57534E */
+  --ink-strong: var(--qilin);     /* 墨 #1F1E1D */
+  --ink-soft: #8A857C;            /* 弱化（规格） */
+  --muted: #8A857C;
+  --muted-2: #B8B2A6;             /* 禁用文本（暖灰） */
+  --line: var(--shaofen);         /* #E7E4DB */
+  --line-soft: #F1EFE8;
+  --line-strong: var(--shuangdi); /* #D8D4C8 */
+  --accent: var(--ink-strong);    /* 主钮近黑 #1F1E1D */
+  --accent-hover: #3B3835;        /* 近黑提亮一档（hover） */
+  --accent-soft: #ECE9E1;         /* 激活（规格） */
+  --secondary: var(--accent-soft);
+  --secondary-soft: #F1EFE8;
+  --link: var(--qingming);        /* #9A6B54 */
+  --success: var(--qinghuo);      /* #629A90 */
+  --success-soft: #E9F1EC;
+  --warning: var(--zimoujin);     /* #57534E */
+  --user: #F0EEE6;                /* 用户气泡（规格） */
+
+  --ring: #57534E;                /* 聚焦环暖墨 */
+
+  --color-primary: var(--ink-strong);
+  --color-primaryLight: var(--xiayue);
+  --color-primaryDark: var(--zheluo);
+  --color-primarySoft: rgba(0, 0, 0, 0.05);  /* hover 黑 5% */
+  --color-accent: var(--ink-strong);
+  --color-accentSoft: var(--accent-soft);
+  --color-accentLight: var(--xiayue);
+  --color-accentHover: var(--accent-hover);
+  --color-success: var(--qinghuo);
+  --color-warning: var(--zimoujin);
+  --color-danger: var(--zhuzhu);
+  --color-info: var(--muted);
+  --color-link: var(--qingming);
+  --color-bgPrimary: var(--paper);
+  --color-bgSecondary: var(--paper-2);
+  --color-bgTertiary: var(--paper-3);
+  --color-surface: var(--surface);
+  --color-surfaceMuted: var(--paper-2);
+  --color-textPrimary: var(--ink-strong);
+  --color-textSecondary: var(--ink);
+  --color-textTertiary: var(--ink-soft);
+  --color-textDisabled: #B8B2A6;
+  --color-borderPrimary: var(--line);
+  --color-borderSecondary: var(--line);
+  --color-borderLight: var(--line-soft);
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  --color-overlay: rgba(0, 0, 0, 0.32);
+
+  --glass-bg: rgba(255, 255, 255, 0.74);
+  --glass-bg-strong: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-shadow: 0 18px 44px rgba(0, 0, 0, 0.08);
+
+  /* 长辈模式光球三档亮色——暖米珍珠 */
+  --senior-orb-top: #E4EFFB;
+  --senior-orb-mid: #AFCDF2;
+  --senior-orb-deep: #82B2E8;
+  --senior-orb-glow: #E9F6F5;
+  --senior-orb-shade: #6BA3DE;
+  --senior-orb-rim: #C8D3F0;
+}
+
+/* =========================================================================
+ * spring 春分（品牌色克制版）
+ * 主底 #FFFFFF / 侧栏 #F4F6F1（皦玉淡化）/ 卡 #FFFFFF / 墨 #12264F 骐驶 /
+ * 次级 #445B62 / 弱化 #7A8B85 / 描边 #E0E0D0 韶粉 / 激活 #EBEEE8 / 气泡 #EBEEE8 /
+ * 主钮 #12264F（品牌墨当按钮）；品牌辅助色只进小件：
+ * 链接青冥 #3271AE / 状态青雘 #007175 / 危险朱磦 #C83C3C / 品牌 symbol 檀色 #B26D5D
+ * ========================================================================= */
+[data-theme='spring'] {
+  color-scheme: light;
+
+  --jiaoyu: #F4F6F1;      /* 皦玉淡化 → 侧栏底 */
+  --jiliang: #EBEEE8;     /* 吉量 → 激活/选中填充 */
+  --shaofen: #E0E0D0;     /* 韶粉 → hairline 描边 */
+  --shuangdi: #C9C9B6;    /* 霜地 → 强描边（韶粉深一档） */
+  --xiayue: #EBEEE8;      /* 夏籥 → 浅强调填充 */
+  --zimoujin: #445B62;    /* 紫磨金 → warning 中性化＝次级 */
+  --tanse: #B26D5D;       /* 檀色 → 品牌 symbol 专用 */
+  --zheluo: #1D3763;      /* 赭罗 → 主钮 hover（骐驶提亮一档） */
+  --huangdan: #C83C3C;    /* 黄丹 → 危险主值（朱磦） */
+  --luoshen: #AB3030;     /* 洛神珠 → 危险 hover/深一档 */
+  --danhuo: #AB3030;
+  --shuihuazhu: #922727;
+  --zhuzhu: #C83C3C;      /* 朱磦（危险/急危主色） */
+  --qingming: #3271AE;    /* 青冥 → 链接 */
+  --qinghuo: #007175;     /* 青雘 → 状态绿（状态/进度小件） */
+  --qinggua: #445B62;     /* 青緺位 → 文本次级 */
+  --qilin: #12264F;       /* 骐驶 → 文本主色/主按钮底（近黑蓝） */
+
+  --paper: #FFFFFF;               /* 主背景 */
+  --paper-2: var(--jiaoyu);       /* 侧栏 #F4F6F1 */
+  --paper-3: var(--jiliang);      /* 选中/激活 #EBEEE8 */
+  --surface: #FFFFFF;             /* 卡片 */
+  --ink: var(--qinggua);          /* 次级 #445B62 */
+  --ink-strong: var(--qilin);     /* 墨 #12264F */
+  --ink-soft: #7A8B85;            /* 弱化（规格） */
+  --muted: #7A8B85;
+  --muted-2: #A9B3AD;             /* 禁用文本（皦玉灰绿） */
+  --line: var(--shaofen);         /* #E0E0D0 */
+  --line-soft: #EFEFE6;
+  --line-strong: var(--shuangdi); /* #C9C9B6 */
+  --accent: var(--ink-strong);    /* 主钮近黑蓝 #12264F */
+  --accent-hover: #1D3763;        /* 品牌墨提亮一档（hover） */
+  --accent-soft: #EBEEE8;         /* 激活（规格） */
+  --secondary: var(--accent-soft);
+  --secondary-soft: #F1F3EC;
+  --link: var(--qingming);        /* #3271AE */
+  --success: var(--qinghuo);      /* #007175 */
+  --success-soft: #E1F0EF;
+  --warning: var(--zimoujin);     /* #445B62 */
+  --user: #EBEEE8;                /* 用户气泡（规格） */
+
+  --ring: #445B62;                /* 聚焦环次级青灰 */
+
+  --color-primary: var(--ink-strong);
+  --color-primaryLight: var(--xiayue);
+  --color-primaryDark: var(--zheluo);
+  --color-primarySoft: rgba(0, 0, 0, 0.05);  /* hover 黑 5% */
+  --color-accent: var(--ink-strong);
+  --color-accentSoft: var(--accent-soft);
+  --color-accentLight: var(--xiayue);
+  --color-accentHover: var(--accent-hover);
+  --color-success: var(--qinghuo);
+  --color-warning: var(--zimoujin);
+  --color-danger: var(--zhuzhu);
+  --color-info: var(--muted);
+  --color-link: var(--qingming);
+  --color-bgPrimary: var(--paper);
+  --color-bgSecondary: var(--paper-2);
+  --color-bgTertiary: var(--paper-3);
+  --color-surface: var(--surface);
+  --color-surfaceMuted: var(--paper-2);
+  --color-textPrimary: var(--ink-strong);
+  --color-textSecondary: var(--ink);
+  --color-textTertiary: var(--ink-soft);
+  --color-textDisabled: #A9B3AD;
+  --color-borderPrimary: var(--line);
+  --color-borderSecondary: var(--line);
+  --color-borderLight: var(--line-soft);
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  --color-overlay: rgba(0, 0, 0, 0.32);
+
+  --glass-bg: rgba(255, 255, 255, 0.74);
+  --glass-bg-strong: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-shadow: 0 18px 44px rgba(0, 0, 0, 0.08);
+
+  /* 长辈模式光球三档亮色——春分青绿 */
+  --senior-orb-top: #DFF5F1;
+  --senior-orb-mid: #A5D8DC;
+  --senior-orb-deep: #79C2CE;
+  --senior-orb-glow: #E6FBF7;
+  --senior-orb-shade: #58B0BC;
+  --senior-orb-rim: #BEE3DE;
+}
+
+/* =========================================================================
+ * night 夜阑（暗色，vercel dark 结构：侧栏比主底更深、卡更浅、浮层带高光描边）
+ * 主底 #262626 / 侧栏 #1F1F1F / 卡 #303030 / 墨 #E8E8E8 / 次级 #A3A3A3 /
+ * 弱化 #8F8F8F / 描边 #3D3D3D / hover 白 6% / 激活 #3D3D3D / 气泡 #3D3D3D /
+ * 主钮 #E8E8E8 底 #262626 字（反白）；链接 #7CA9D6 / 状态 #5FA97C / 危险 #E07B6C
+ * ========================================================================= */
+[data-theme='night'] {
+  color-scheme: dark; /* 深色主题：原生控件/滚动条按深色渲染 */
+
+  --jiaoyu: #1F1F1F;      /* 侧栏底（比主底更深，照 vercel dark sidebar） */
+  --jiliang: #3D3D3D;     /* 激活/选中填充 */
+  --shaofen: #3D3D3D;     /* hairline 描边 */
+  --shuangdi: #4A4A4A;    /* 强描边 */
+  --xiayue: #3D3D3D;      /* 浅强调填充 */
+  --zimoujin: #B3B3B3;    /* warning 深色变体 */
+  --tanse: #B26D5D;       /* 品牌 symbol 恒值（装饰性，对 #262626 达 3.7:1 ≥3:1） */
+  --zheluo: #D9D9D9;      /* 强调深一档（反白系 hover 同源） */
+  --huangdan: #E07B6C;    /* 危险主值（规格） */
+  --luoshen: #E68F82;     /* 危险 hover（暗色下提亮一档） */
+  --danhuo: #E68F82;
+  --shuihuazhu: #F0A79C;  /* 危险最深档（暗色下方向反转＝更亮） */
+  --zhuzhu: #E07B6C;
+  --qingming: #7CA9D6;    /* 链接（规格） */
+  --qinghuo: #5FA97C;     /* 状态绿（规格） */
+  --qinggua: #A3A3A3;     /* 文本次级（规格） */
+  --qilin: #E8E8E8;       /* 文本主色/主按钮底（反白） */
+
+  --paper: #262626;               /* 主背景（规格） */
+  --paper-2: var(--jiaoyu);       /* 侧栏 #1F1F1F */
+  --paper-3: var(--jiliang);      /* 选中/激活 #3D3D3D */
+  --surface: #303030;             /* 卡片/弹层/composer（规格：白改卡色） */
+  --ink: var(--qinggua);          /* 次级 #A3A3A3（对 #262626 5.9:1） */
+  --ink-strong: var(--qilin);     /* 墨 #E8E8E8（对 #262626 11.9:1） */
+  --ink-soft: #8F8F8F;            /* 弱化（探查 ux 项：自 #737373 提亮；实测 #262626 主底对比 3.19→4.38:1） */
+  --muted: #737373;
+  --muted-2: #6B6B6B;             /* 禁用文本 */
+  --line: var(--shaofen);         /* #3D3D3D */
+  --line-soft: #333333;
+  --line-strong: var(--shuangdi); /* #4A4A4A */
+  --accent: var(--ink-strong);    /* 主钮反白 #E8E8E8 */
+  --accent-hover: #D9D9D9;        /* 白底加深一档 */
+  --accent-soft: #3D3D3D;         /* 激活（规格） */
+  --secondary: var(--accent-soft);
+  --secondary-soft: rgba(255, 255, 255, 0.06);
+  --link: var(--qingming);        /* #7CA9D6 */
+  --success: var(--qinghuo);      /* #5FA97C */
+  --success-soft: rgba(95, 169, 124, 0.18);
+  --warning: var(--zimoujin);     /* #B3B3B3 */
+  --user: #3D3D3D;                /* 用户气泡（规格） */
+
+  --ring: #A3A3A3;                /* 聚焦环亮灰 */
+
+  --color-primary: var(--ink-strong);
+  --color-primaryLight: var(--xiayue);
+  --color-primaryDark: var(--zheluo);
+  --color-primarySoft: rgba(255, 255, 255, 0.06);  /* hover 白 6%（规格） */
+  --color-accent: var(--ink-strong);
+  --color-accentSoft: var(--accent-soft);
+  --color-accentLight: var(--xiayue);
+  --color-accentHover: var(--accent-hover);
+  --color-success: var(--qinghuo);
+  --color-warning: var(--zimoujin);
+  --color-danger: var(--zhuzhu);
+  --color-info: var(--muted);
+  --color-link: var(--qingming);
+  --color-bgPrimary: var(--paper);
+  --color-bgSecondary: var(--paper-2);
+  --color-bgTertiary: var(--paper-3);
+  --color-surface: var(--surface);
+  --color-surfaceMuted: var(--paper-2);
+  --color-textPrimary: var(--ink-strong);
+  --color-textSecondary: var(--ink);
+  --color-textTertiary: var(--ink-soft);
+  --color-textDisabled: #6B6B6B;
+  --color-borderPrimary: var(--line);
+  --color-borderSecondary: var(--line);
+  --color-borderLight: var(--line-soft);
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  --color-overlay: rgba(0, 0, 0, 0.60);    /* 遮罩加深（照 vercel dark） */
+
+  /* ===== 深色阴影族（规格：暗色按 vercel .dark 加深；原 :root 浅色值的唯一主题覆盖） ===== */
+  --shadow: 0 7px 24px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 22px 54px rgba(0, 0, 0, 0.50);
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.20), 0 0.5px 1px rgba(0, 0, 0, 0.15);
+  --shadow-float: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 16px 48px -6px rgba(0, 0, 0, 0.35), 0 6px 12px -2px rgba(0, 0, 0, 0.20);
+  --shadow-composer: 0 1px 3px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --shadow-composer-focus: 0 0 0 1px rgba(255, 255, 255, 0.10), 0 4px 16px -4px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --glass-bg: rgba(38, 38, 38, 0.78);
+  --glass-bg-strong: rgba(38, 38, 38, 0.90);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+
+  /* 长辈模式光球三档亮色——靛夜夜光（暗底下提亮的靛蓝，避免夜阑里刺眼） */
+  --senior-orb-top: #476FA8;
+  --senior-orb-mid: #2F4E7E;
+  --senior-orb-deep: #1D3557;
+  --senior-orb-glow: #4E86A8;
+  --senior-orb-shade: #142A47;
+  --senior-orb-rim: #5B5F9E;
+}

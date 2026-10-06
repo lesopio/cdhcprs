@@ -1,0 +1,353 @@
+{
+  "common": {
+    "appName": "橘泉智养",
+    "brandTagline": "国风智能问诊助手",
+    "menu": "菜单",
+    "actions": {
+      "refresh": "刷新",
+      "save": "保存",
+      "cancel": "取消",
+      "delete": "删除",
+      "view": "查看",
+      "close": "关闭",
+      "edit": "编辑",
+      "confirm": "确认",
+      "test": "测试连接",
+      "fetchModels": "获取模型列表",
+      "new": "新建",
+      "back": "返回",
+      "logout": "退出登录"
+    },
+    "status": {
+      "active": "活跃",
+      "disabled": "已禁用",
+      "banned": "已封禁",
+      "normal": "正常",
+      "warning": "警告",
+      "success": "成功",
+      "error": "错误"
+    }
+  },
+  "language": {
+    "zhCN": "简体中文",
+    "enUS": "English"
+  },
+  "home": {
+    "nav": {
+      "home": "首页",
+      "features": "核心功能",
+      "about": "关于系统",
+      "login": "登录",
+      "register": "注册"
+    },
+    "hero": {
+      "title": "慢性病诊疗方案推荐系统",
+      "subtitle": "基于大语言模型的智能医疗辅助系统，为慢性病患者提供专业的诊疗建议",
+      "cta": "立即登录"
+    },
+    "features": {
+      "title": "核心功能",
+      "cards": {
+        "chat": {
+          "title": "智能对话",
+          "description": "基于大语言模型的实时问答系统，提供专业的医疗咨询"
+        },
+        "plan": {
+          "title": "方案推荐",
+          "description": "结合患者症状与病史，智能推荐个性化诊疗方案"
+        },
+        "analysis": {
+          "title": "数据分析",
+          "description": "多维度分析患者健康数据，提供科学的管理建议"
+        },
+        "privacy": {
+          "title": "隐私保护",
+          "description": "严格的数据加密与访问控制，保障患者信息安全"
+        },
+        "service": {
+          "title": "全天候服务",
+          "description": "24/7 在线支持，随时随地解决您的健康疑问"
+        },
+        "reliable": {
+          "title": "专业可靠",
+          "description": "依托权威医学知识库，输出准确可信的医疗建议"
+        }
+      }
+    },
+    "about": {
+      "title": "关于系统",
+      "heading": "专业的慢性病管理平台",
+      "description1": "本系统采用先进的大语言模型技术，结合中医理论与现代医疗知识，为慢性病患者提供智能化的问诊体验。",
+      "description2": "我们坚持国风设计语言，打造沉浸式的诊疗交互体验，帮助患者更好地理解和管理自身健康状况。",
+      "more": "了解更多"
+    },
+    "footer": {
+      "privacy": "隐私政策",
+      "terms": "使用条款"
+    }
+  },
+  "chat": {
+    "title": "智能问诊",
+    "sidebarTagline": "国风智能问诊助手",
+    "newConversation": "新建对话",
+    "refresh": "刷新",
+    "patientProfile": "问诊档案",
+    "patientProfileHint": "完善信息可帮助模型给出更准确的建议",
+    "fillInfo": "点击填写",
+    "updateInfo": "更新问诊信息",
+    "infoDialogTitle": "问诊信息",
+    "age": "年龄",
+    "gender": "性别",
+    "genderMale": "男",
+    "genderFemale": "女",
+    "genderOther": "其他",
+    "chiefComplaint": "主要问题",
+    "chiefComplaintPlaceholder": "请简要描述主要问题、症状或想要咨询的内容",
+    "mainSymptom": "主要症状",
+    "mainSymptomPlaceholder": "请描述您的主要症状",
+    "medicalHistory": "病史",
+    "medicalHistoryPlaceholder": "请描述既往病史（可选）",
+    "allergies": "过敏史",
+    "allergiesPlaceholder": "请填写药物或食物过敏史（可选）",
+    "agePlaceholder": "请输入年龄",
+    "skipForm": "跳过",
+    "submitInfo": "提交",
+    "questionPlaceholder": "请输入您的问题，提供越详细的信息越有助于获得准确建议",
+    "send": "发送",
+    "infoSaved": "问诊信息已更新，下一条消息将同步给模型",
+    "infoSkip": "暂不填写",
+    "infoClear": "清空",
+    "infoSave": "保存信息",
+    "conversationDisabled": "此对话已被禁用",
+    "conversationDisabledDetail": "管理员已更换模型配置，该对话无法继续使用。请创建新对话以继续。",
+    "createNewConversation": "创建新对话",
+    "modelUpdatedNotice": "系统模型已更新，当前对话已被禁用。请创建新的对话以继续使用。",
+    "welcomeTitle": "欢迎使用慢性病诊疗方案推荐系统",
+    "welcomeSubtitle": "创建新的问诊对话，完善个人信息后即可开始咨询。",
+    "userMenu": {
+      "profile": "个人信息",
+      "admin": "管理后台",
+      "logout": "退出登录"
+    },
+    "ageError": "请输入 0-120 之间的整数",
+    "chiefComplaintError": "请至少输入 4 个字符",
+    "assistantLabel": "智能助手",
+    "userLabel": "用户",
+    "diseaseHistory": "疾病史",
+    "recentSymptoms": "近期症状",
+    "tcmSyndrome": "中医证型",
+    "tcmSyndromeHint": "根据您的症状自动推断，供AI参考"
+  },
+  "admin": {
+    "title": "管理员控制台",
+    "subtitle": "管理用户、对话与模型配置，保障系统稳定运行",
+    "menu": {
+      "users": "用户管理",
+      "conversations": "对话管理",
+      "settings": "系统设置"
+    },
+    "users": {
+      "title": "用户列表",
+      "description": "查看用户状态并执行封禁、解封或删除操作",
+      "id": "ID",
+      "username": "用户名",
+      "role": "角色",
+      "status": "状态",
+      "createdAt": "注册时间",
+      "ban": "封禁",
+      "unban": "解封",
+      "delete": "删除",
+      "banSuccess": "用户已被封禁",
+      "unbanSuccess": "已解除用户封禁"
+    },
+    "conversations": {
+      "title": "对话监控",
+      "description": "查看平台内所有对话并支持内容审查",
+      "view": "查看内容",
+      "delete": "删除",
+      "createdAt": "创建时间",
+      "userId": "用户 ID",
+      "status": "状态",
+      "deleteConfirm": "确定要删除该对话吗？",
+      "dialogTitle": "对话详情 - {title}",
+      "empty": "暂无对话消息"
+    },
+    "settings": {
+      "title": "模型与站点配置",
+      "basic": "基础信息",
+      "llm": "大模型配置",
+      "provider": "供应商",
+      "apiKey": "API Key",
+      "baseUrl": "Base URL",
+      "modelId": "模型 ID",
+      "systemPrompt": "系统提示词",
+      "websiteName": "网站名称",
+      "warning": "修改模型配置将禁用所有历史对话",
+      "providerOpenAIfulHint": "OpenAIful 供应商需填写 Base URL",
+      "description": "配置网站基础信息与大模型接入参数",
+      "websiteNamePlaceholder": "请输入网站名称",
+      "systemPromptPlaceholder": "系统提示词将注入每次对话的开头",
+      "apiKeyPlaceholder": "请输入 API Key",
+      "baseUrlPlaceholder": "请输入接口地址，例如 https://api.example.com/v1",
+      "modelPlaceholder": "请选择或输入模型 ID",
+      "websiteLogo": "网站 Logo",
+      "websiteLogoPlaceholder": "请输入 Logo 图片地址",
+      "uploadLogo": "上传 Logo",
+      "uploading": "上传中...",
+      "logoTips": "支持 PNG、JPG、GIF、SVG、WebP 格式，不超过 2MB",
+      "logoUploadSuccess": "Logo 上传成功",
+      "logoTypeError": "不支持的文件格式，请上传图片文件",
+      "logoSizeError": "文件大小不能超过 2MB",
+      "modelName": "模型名称",
+      "modelNamePlaceholder": "用于展示的模型名称，可选",
+      "modelRequired": "请填写模型 ID 或模型名称",
+      "providerRequired": "请选择模型供应商",
+      "apiKeyRequired": "请输入 API Key",
+      "baseUrlRequired": "请输入 Base URL",
+      "baseUrlRequiredPlaceholder": "请输入完整的 Base URL（例如 https://api.example.com/v1）",
+      "websiteNameRequired": "请输入网站名称",
+      "systemPromptRequired": "请输入系统提示词",
+      "largeFontScale": "大字版放大倍率",
+      "largeFontScalePlaceholder": "请输入放大倍率（如 1.5 表示150%）",
+      "largeFontScaleTips": "建议设置范围：1.2 - 2.0"
+    },
+    "dialog": {
+      "conversationTitle": "对话",
+      "user": "用户",
+      "assistant": "助手"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "用户登录",
+      "username": "请输入用户名",
+      "password": "请输入密码",
+      "submit": "登录",
+      "register": "注册账号",
+      "usernameRequired": "请输入用户名",
+      "passwordRequired": "请输入密码"
+    },
+    "register": {
+      "title": "用户注册",
+      "username": "请输入用户名（3-50个字符）",
+      "password": "请输入密码（至少6个字符）",
+      "submit": "注册",
+      "back": "返回登录",
+      "usernameRequired": "请输入用户名",
+      "passwordRequired": "请输入密码",
+      "usernameRule": "用户名长度为3-50个字符",
+      "passwordRule": "密码长度至少6个字符"
+    }
+  },
+  "profile": {
+    "title": "个人信息",
+    "roleAdmin": "管理员",
+    "roleUser": "普通用户",
+    "registeredAt": "注册时间",
+    "changePassword": "修改密码",
+    "newPassword": "请输入新密码",
+    "confirmPassword": "请再次输入新密码",
+    "update": "修改密码",
+    "passwordPlaceholder": "请输入新密码（至少6个字符）",
+    "confirmPasswordPlaceholder": "请再次输入新密码",
+    "confirmPasswordRequired": "请再次输入新密码"
+  },
+  "about": {
+    "title": "关于系统",
+    "version": "版本",
+    "intro": "基于大语言模型的智能慢性病诊疗方案推荐系统",
+    "systemIntro": "本系统采用先进的大语言模型技术，结合专业的医学知识库，为慢性病患者提供智能化的诊疗方案推荐服务。",
+    "featureList": {
+      "auth": "安全的用户注册、登录和权限管理功能",
+      "chat": "基于大语言模型的智能对话，提供专业的医疗咨询",
+      "plan": "根据患者情况智能推荐个性化的诊疗方案",
+      "admin": "完善的系统管理功能，包括用户管理、对话管理和系统设置",
+      "security": "严格的数据加密和隐私保护机制"
+    },
+    "disclaimer": "本系统提供的诊疗建议仅供参考，不能替代专业医生的诊断和治疗。如有健康问题，请及时就医并遵循医生的专业建议。"
+  },
+  "messages": {
+    "logoutConfirm": "确定要退出登录吗？",
+    "modelUpdate": "系统模型已更新，请开启新的对话。",
+    "needApiKey": "请先填写 API Key",
+    "needBaseUrl": "OpenAIful 供应商需填写 Base URL",
+    "fetchModelsSuccess": "获取模型列表成功",
+    "fetchModelsFail": "获取模型列表失败，请检查配置",
+    "connectionTestFail": "连接测试失败",
+    "settingsSaved": "设置已保存，历史对话已禁用",
+    "conversationCreated": "新建对话成功",
+    "deleteSuccess": "删除成功",
+    "sendFailed": "发送失败，请重试",
+    "selectConversationWarning": "请先选择或创建对话",
+    "needSelectConversation": "请先选择对话",
+    "deleteConversationConfirm": "确定要删除这个对话吗？",
+    "confirmTitle": "提示",
+    "loginSuccess": "登录成功",
+    "loginFailed": "登录失败，请重试",
+    "registerSuccess": "注册成功，请登录",
+    "registerFailed": "注册失败，请重试",
+    "profileUpdateSuccess": "个人信息已更新",
+    "passwordMismatch": "两次输入的密码不一致",
+    "passwordUpdateSuccess": "密码修改成功",
+    "banSuccess": "封禁成功",
+    "unbanSuccess": "解封成功",
+    "deleteUserSuccess": "删除用户成功",
+    "loadUsersFailed": "加载用户列表失败",
+    "loadConversationsFailed": "加载对话列表失败",
+    "fetchSettingsFailed": "加载设置失败",
+    "fetchModelOptionsSuccess": "获取模型列表成功",
+    "fetchModelOptionsFailed": "获取模型列表失败",
+    "connectionTestSuccess": "连接测试成功",
+    "connectionTestFailed": "连接测试失败",
+    "passwordUpdateFailed": "密码修改失败，请重试",
+    "requestFailed": "请求失败",
+    "networkError": "网络错误",
+    "deleteUserConfirm": "确定要删除该用户吗？",
+    "adminOnly": "需要管理员权限，请联系管理员。"
+  },
+  "statusMessages": {
+    "backendHealthy": "后端正常",
+    "backendUnhealthy": "后端异常",
+    "backendOkDetail": "后端服务正常运行",
+    "backendErrorDetail": "后端服务连接失败，请检查服务是否启动",
+    "lastCheck": "最后检查: {time}"
+  },
+  "largeFontMode": {
+    "label": "大字版",
+    "on": "开",
+    "off": "关"
+  },
+  "theme": {
+    "modern": "现代医疗",
+    "tcm": "中医风格",
+    "switchToModern": "切换到现代医疗主题",
+    "switchToTcm": "切换到中医风格主题"
+  },
+  "homeExtra": {
+    "badge": "慢病 AI 问诊助手",
+    "startNow": "开始问诊",
+    "registerNow": "创建健康档案",
+    "previewTitle": "今日问诊",
+    "previewStatus": "档案已同步",
+    "step1": "描述症状",
+    "step2": "补充档案",
+    "step3": "获得建议",
+    "safetyNote": "AI 建议仅作健康参考，不能替代医生诊断。"
+  },
+  "chatExtra": {
+    "profilePanelTitle": "患者档案",
+    "profilePanelSubtitle": "用于生成更贴合的慢病建议",
+    "noProfile": "尚未填写档案",
+    "editProfile": "编辑档案",
+    "selectedDiseases": "已选疾病",
+    "selectedSymptoms": "近期症状",
+    "emptyConversationHint": "选择或新建一次问诊，开始记录你的健康问题。",
+    "mobileConversations": "会话",
+    "mobileProfile": "档案"
+  },
+  "authExtra": {
+    "heroTitle": "把慢病咨询整理成清晰记录",
+    "heroSubtitle": "登录后可保存问诊、补充健康档案，并持续获得 AI 辅助建议。",
+    "registerSubtitle": "创建账号后开始管理你的慢病问诊记录。"
+  }
+}

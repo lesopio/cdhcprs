@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>沐诊 · 春分配色医疗 AI</title>
+<style>
+:root{
+  /* 春分 · Solar Term */
+  --white:#FFFFFF;
+
+  /* 春分浅色 */
+  --jiaoyu:#EBEEE8;      /* 皦玉 */
+  --jiliang:#EBEDDF;     /* 吉量 */
+  --shaofen:#E0E0D0;     /* 韶粉 */
+  --shuangdi:#C7C6B6;    /* 霜地 */
+
+  /* 春分暖色 */
+  --xiayue:#D2AF9D;      /* 夏籥 */
+  --zimoujin:#BC836B;    /* 紫磨金 */
+  --tanse:#B26D5D;       /* 檀色 */
+  --zheluo:#9A6655;      /* 赭罗 */
+
+  /* 春分朱色 */
+  --huangdan:#EA5514;    /* 黄丹 */
+  --luoshen:#D23918;     /* 洛神珠 */
+  --danhuo:#C8161D;      /* 丹雘 */
+  --shuihuazhu:#A72126;  /* 水华朱 */
+
+  /* 春分青色 */
+  --qingming:#3271AE;    /* 青冥 */
+  --qinghuo:#007175;     /* 青雘 */
+  --qinggua:#284852;     /* 青緺 */
+  --qilin:#12264F;       /* 骐驎 */
+
+  /* 产品语义色 */
+  --paper:#FFFFFF;
+  --paper-2:#EBEEE8;
+  --paper-3:#EBEDDF;
+  --surface:#FFFFFF;
+  --ink:#284852;
+  --ink-strong:#12264F;
+  --ink-soft:#445B62;
+  --muted:#7A817D;
+  --muted-2:#9A9F98;
+  --line:#E0E0D0;
+  --line-strong:#C7C6B6;
+  --accent:#B26D5D;
+  --accent-hover:#9A6655;
+  --accent-soft:#F7F0EC;
+  --secondary:#007175;
+  --secondary-soft:#F0F6F4;
+  --link:#3271AE;
+  --success:#007175;
+  --success-soft:#F0F6F4;
+  --warning:#BC836B;
+  --user:#EBEEE8;
+  --shadow:0 7px 24px rgba(18,38,79,.05);
+
+  /* UI全部无衬线；衬线只做大标题 */
+  --serif:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+  --sans:Inter,"SF Pro Text","Segoe UI","PingFang SC","Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  color:var(--ink);
+  background:var(--paper);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+svg{display:block}
+
+.app{height:100vh;display:grid;grid-template-columns:245px minmax(0,1fr)}
+.sidebar{
+  min-width:0;
+  background:linear-gradient(180deg,#FFFFFF 0%,var(--jiaoyu) 150%);
+  border-right:1px solid rgba(40,72,82,.08);
+  display:flex;flex-direction:column;
+  padding:12px 10px 10px;
+}
+.brand{
+  height:45px;
+  display:flex;align-items:center;gap:9px;
+  padding:0 10px 5px;
+  font-family:var(--sans);
+  font-size:17px;
+  font-weight:650;
+  letter-spacing:.01em;
+}
+.brand-mark{color:var(--tanse);width:21px;height:21px}
+.side-btn{
+  width:100%;height:39px;border:0;background:transparent;border-radius:9px;
+  display:flex;align-items:center;gap:10px;padding:0 10px;
+  font-size:12.5px;text-align:left;color:var(--ink-soft)
+}
+.side-btn:hover{background:rgba(40,72,82,.045)}
+.side-btn.active{background:var(--jiaoyu);color:var(--qinggua)}
+.side-icon{width:18px;height:18px;display:grid;place-items:center;color:#66777A}
+.new-btn{margin-top:4px}
+.divider{height:1px;background:rgba(40,72,82,.09);margin:9px 8px}
+.side-heading{
+  padding:7px 10px 5px;
+  font-size:10.5px;
+  font-weight:650;
+  letter-spacing:.02em;
+  color:var(--muted)
+}
+.recents{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#d2cdc5 transparent}
+.recent{
+  display:block;width:100%;border:0;background:transparent;border-radius:8px;
+  padding:8px 10px;text-align:left
+}
+.recent:hover{background:rgba(40,72,82,.04)}
+.recent.active{background:var(--jiaoyu)}
+.recent-title{
+  font-size:12.2px;line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.recent-meta{font-size:10px;color:var(--muted-2);margin-top:4px}
+.profile{
+  border-top:1px solid rgba(40,72,82,.09);
+  padding:10px 7px 1px;
+  display:flex;align-items:center;gap:9px
+}
+.avatar{
+  width:30px;height:30px;border-radius:50%;background:var(--qinggua);color:white;
+  display:grid;place-items:center;font-size:11px;font-weight:700
+}
+.profile-title{font-size:11.5px;font-weight:650}
+.profile-sub{font-size:9.5px;color:var(--muted);margin-top:2px}
+
+.main{height:100vh;min-width:0;position:relative;background:var(--paper)}
+.topbar{
+  position:absolute;z-index:10;left:0;right:0;top:0;height:54px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 18px 0 19px;pointer-events:none
+}
+.topbar>*{pointer-events:auto}
+.top-left,.top-right{display:flex;align-items:center;gap:6px}
+.ghost{
+  border:0;background:transparent;border-radius:8px;height:32px;padding:0 8px;
+  display:flex;align-items:center;gap:6px;font-size:11.5px;color:#66777A
+}
+.ghost:hover{background:rgba(40,72,82,.04)}
+.status{
+  border:1px solid var(--line);background:rgba(255,254,250,.85);
+  height:29px;border-radius:8px;padding:0 9px;display:flex;align-items:center;gap:7px;
+  font-size:10.5px;color:#6D7B7D
+}
+.status i{width:6px;height:6px;border-radius:50%;background:var(--success)}
+.icon-btn{
+  width:32px;height:32px;border:0;background:transparent;border-radius:8px;
+  display:grid;place-items:center;color:#68797B
+}
+.icon-btn:hover{background:rgba(40,72,82,.04)}
+
+.view{display:none;height:100%}
+.view.active{display:block}
+
+/* HOME */
+.home{
+  height:100%;overflow:auto;
+  display:flex;justify-content:center;align-items:center;
+  padding:86px 28px 64px
+}
+.home-inner{width:min(760px,100%);transform:translateY(-3vh)}
+.hello{
+  display:flex;align-items:center;justify-content:center;gap:13px;
+  margin-bottom:27px
+}
+.hello svg{color:var(--tanse);width:26px;height:26px}
+.hello h1{
+  font-family:var(--serif);
+  font-size:38px;font-weight:600;letter-spacing:0;
+  margin:0;color:var(--ink-strong)
+}
+.composer{
+  background:#FFFFFF;
+  border:1px solid var(--line);
+  border-radius:16px;
+  box-shadow:var(--shadow);
+  padding:13px 13px 10px
+}
+.composer textarea{
+  width:100%;height:84px;border:0;outline:0;resize:none;background:transparent;
+  padding:6px 7px;font-size:15px;line-height:1.6;color:var(--ink)
+}
+.composer textarea::placeholder{color:#9e9790}
+.composer-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.composer-tools{display:flex;align-items:center;gap:3px}
+.round-tool{
+  width:34px;height:34px;border-radius:9px;border:0;background:transparent;
+  display:grid;place-items:center;color:#77706a
+}
+.round-tool:hover{background:var(--jiaoyu)}
+.mode-select{
+  height:32px;border:0;background:transparent;border-radius:8px;padding:0 8px;
+  font-size:11px;color:#726b65;display:flex;align-items:center;gap:6px
+}
+.mode-select:hover{background:var(--jiaoyu)}
+.send{
+  width:35px;height:35px;border:0;border-radius:10px;
+  background:var(--qinggua);color:white;display:grid;place-items:center
+}
+.send:hover{background:var(--qilin)}
+.quick-title{
+  margin:21px 0 10px;text-align:center;
+  font-size:10.5px;color:var(--muted-2)
+}
+.quick{
+  display:flex;justify-content:center;flex-wrap:wrap;gap:7px
+}
+.quick button{
+  border:1px solid var(--line-soft);background:#FFFFFF;
+  padding:8px 11px;border-radius:9px;font-size:11px;color:#706963
+}
+.quick button:hover{border-color:var(--shuangdi);background:#FFFFFF}
+.home-note{
+  margin:27px auto 0;text-align:center;max-width:620px;
+  font-size:10px;line-height:1.6;color:#aaa39c
+}
+
+/* CHAT */
+.chat{
+  height:100%;
+  display:flex;flex-direction:column;
+}
+.chat-scroll{
+  flex:1;min-height:0;overflow:auto;
+  padding:80px 28px 150px;
+  scrollbar-width:thin;scrollbar-color:#d6d1c9 transparent
+}
+.thread{width:min(760px,100%);margin:0 auto}
+.conversation-title{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:22px;
+  letter-spacing:0;
+  margin:0 0 38px;
+  color:var(--ink-strong)
+}
+.user-wrap{display:flex;justify-content:flex-end;margin-bottom:28px}
+.user-bubble{
+  max-width:72%;
+  background:var(--jiaoyu);
+  border-radius:15px 15px 4px 15px;
+  padding:11px 14px;
+  font-size:13.5px;line-height:1.58;color:var(--qinggua)
+}
+.assistant{margin-bottom:32px}
+.assistant-label{
+  display:flex;align-items:center;gap:8px;
+  color:#706961;font-size:11px;margin-bottom:12px
+}
+.assistant-label .mini-mark{color:var(--tanse)}
+.answer h2{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:24px;
+  letter-spacing:0;
+  line-height:1.38;
+  margin:0 0 18px;
+  color:var(--ink-strong)
+}
+.answer p{
+  font-size:13.5px;line-height:1.85;
+  color:var(--ink-soft);margin:11px 0
+}
+.answer strong{font-weight:650;color:var(--ink)}
+.callout{
+  margin:18px 0;
+  padding:13px 15px;
+  background:linear-gradient(90deg,var(--jiaoyu),#FFFFFF);
+  border-left:2px solid var(--qinghuo);
+  border-radius:0 9px 9px 0;
+  font-size:12.5px;line-height:1.75;color:var(--ink-soft)
+}
+.answer h3{
+  margin:24px 0 10px;
+  font-family:var(--serif);
+  font-size:17px;font-weight:600;color:var(--ink-strong)
+}
+.answer ul{margin:8px 0 0 19px;padding:0}
+.answer li{
+  padding-left:3px;margin:8px 0;
+  font-size:13.5px;line-height:1.75;color:var(--ink-soft)
+}
+.source-row{
+  margin-top:22px;padding-top:13px;border-top:1px solid var(--line-soft);
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap
+}
+.source{
+  font-size:10.5px;color:var(--qinggua);background:var(--jiliang);
+  border-radius:7px;padding:6px 8px
+}
+.feedback{display:flex;align-items:center;gap:3px;margin-top:13px}
+.feedback button{
+  width:28px;height:28px;border:0;background:transparent;border-radius:7px;
+  color:#99928b
+}
+.feedback button:hover{background:var(--jiaoyu);color:#68797B}
+
+/* ACTIVITY BLOCK */
+.activity{
+  margin:0 0 24px;
+  border-top:1px solid var(--line-soft);
+  border-bottom:1px solid var(--line-soft);
+}
+.activity-head{
+  width:100%;height:42px;border:0;background:transparent;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0;font-size:11.5px;color:#68615b
+}
+.activity-left{display:flex;align-items:center;gap:8px}
+.activity-left svg{color:#8b8179}
+.activity-meta{font-size:10px;color:#9b948d}
+.activity-body{display:none;padding:0 0 11px}
+.activity.open .activity-body{display:block}
+.activity-step{
+  display:grid;grid-template-columns:18px minmax(0,1fr) auto;
+  align-items:start;gap:8px;padding:6px 0;
+}
+.step-dot{
+  width:17px;height:17px;border-radius:50%;display:grid;place-items:center;
+  background:var(--secondary-soft);color:var(--qinghuo);font-size:9px;margin-top:1px
+}
+.step-title{font-size:11px;color:#5d5650}
+.step-desc{font-size:10px;line-height:1.5;color:#9b948c;margin-top:2px}
+.step-time{font-size:9.5px;color:#aaa39c;padding-top:2px}
+
+/* DOCK */
+.dock-wrap{
+  position:absolute;left:0;right:0;bottom:0;
+  padding:24px 28px 22px;
+  background:linear-gradient(to bottom,rgba(248,247,243,0),rgba(248,247,243,.96) 32%,var(--paper) 68%)
+}
+.dock{
+  width:min(760px,100%);margin:0 auto;
+  background:#FFFFFF;
+  border:1px solid var(--line);
+  border-radius:15px;
+  box-shadow:0 8px 25px rgba(43,38,33,.07);
+  padding:10px 10px 8px 12px
+}
+.dock input{
+  width:100%;height:36px;border:0;outline:0;background:transparent;
+  padding:0 5px;font-size:13px
+}
+.dock input::placeholder{color:#9f9891}
+.dock-foot{display:flex;align-items:center;justify-content:space-between}
+.dock-left,.dock-right{display:flex;align-items:center;gap:3px}
+
+/* ARTIFACT/DETAIL */
+.detail{
+  height:100%;overflow:auto;padding:76px 34px 50px
+}
+.detail-inner{width:min(980px,100%);margin:0 auto}
+.detail-title{
+  font-family:var(--serif);font-size:31px;font-weight:600;letter-spacing:0;
+  margin:9px 0 6px;color:var(--ink-strong)
+}
+.detail-sub{font-size:12px;color:#8a837c;margin-bottom:31px}
+.detail-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:34px}
+.paper{
+  background:transparent;
+}
+.paper h2{
+  font-family:var(--serif);font-size:20px;font-weight:600;margin:0 0 16px
+}
+.paper p,.paper li{font-size:13px;line-height:1.8;color:var(--ink-soft)}
+.paper ul{padding-left:20px}
+.aside{
+  border-left:1px solid var(--line);
+  padding-left:24px
+}
+.aside h3{
+  font-family:var(--serif);font-size:15px;font-weight:600;margin:0 0 12px
+}
+.meta-block{padding:11px 0;border-bottom:1px solid var(--line-soft)}
+.meta-label{font-size:9.5px;color:#9b948d;margin-bottom:4px}
+.meta-value{font-size:11.5px;color:#5f5852}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 7px;border-radius:7px;background:var(--jiaoyu);
+  color:var(--qinghuo);font-size:10px
+}
+
+@media(max-width:900px){
+  .app{grid-template-columns:210px minmax(0,1fr)}
+  .detail-grid{grid-template-columns:1fr}.aside{border-left:0;border-top:1px solid var(--line);padding:20px 0 0}
+}
+@media(max-width:680px){
+  body{overflow:auto}.app{display:block}.sidebar{display:none}.main{height:auto;min-height:100vh}
+  .view{min-height:100vh}.home{padding:80px 16px 40px}.hello h1{font-size:31px}
+  .chat-scroll{padding:75px 16px 145px}.dock-wrap{padding:22px 14px 16px}
+  .detail{padding:75px 18px 40px}.user-bubble{max-width:88%}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2.7v4.1M12 17.2v4.1M2.7 12h4.1M17.2 12h4.1M5.45 5.45l2.9 2.9M15.65 15.65l2.9 2.9M18.55 5.45l-2.9 2.9M8.35 15.65l-2.9 2.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        <circle cx="12" cy="12" r="3.25" stroke="currentColor" stroke-width="1.7"/>
+      </svg>
+      沐诊
+    </div>
+
+    <button class="side-btn new-btn" onclick="showView('home',this)">
+      <span class="side-icon">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </span>
+      新问诊
+    </button>
+    <button class="side-btn active" data-view="home" onclick="showView('home',this)">
+      <span class="side-icon">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/><path d="M9.3 20v-5.7h5.4V20" stroke="currentColor" stroke-width="1.55"/></svg>
+      </span>
+      首页
+    </button>
+    <button class="side-btn" data-view="chat" onclick="showView('chat',this)">
+      <span class="side-icon">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 18.5h9.5a4.5 4.5 0 0 0 0-9H8A4 4 0 0 0 4 13.5V21l3.1-2.5" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      智能问诊
+    </button>
+    <button class="side-btn" data-view="detail" onclick="showView('detail',this)">
+      <span class="side-icon">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="5" y="3.5" width="14" height="17" rx="2" stroke="currentColor" stroke-width="1.55"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/></svg>
+      </span>
+      患者档案
+    </button>
+
+    <div class="divider"></div>
+    <div class="side-heading">最近</div>
+    <div class="recents">
+      <button class="recent active" onclick="showView('chat')">
+        <div class="recent-title">骨膜炎剧烈运动疼痛咨询</div>
+        <div class="recent-meta">今天 · 已完成</div>
+      </button>
+      <button class="recent">
+        <div class="recent-title">膝盖疼自主问诊第二次</div>
+        <div class="recent-meta">昨天 · 已归档</div>
+      </button>
+      <button class="recent">
+        <div class="recent-title">高血压用药与运动问题</div>
+        <div class="recent-meta">9 月 15 日</div>
+      </button>
+      <button class="recent">
+        <div class="recent-title">睡眠质量下降与头晕</div>
+        <div class="recent-meta">9 月 12 日</div>
+      </button>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">患</div>
+      <div>
+        <div class="profile-title">患者 20260810-1758</div>
+        <div class="profile-sub">档案已关联</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-left">
+        <button class="ghost" id="topTitle">慢病诊疗助手 ▾</button>
+      </div>
+      <div class="top-right">
+        <div class="status"><i></i>服务正常</div>
+        <button class="icon-btn" title="更多">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="view active" id="view-home">
+      <div class="home">
+        <div class="home-inner">
+          <div class="hello">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 2.7v4.1M12 17.2v4.1M2.7 12h4.1M17.2 12h4.1M5.45 5.45l2.9 2.9M15.65 15.65l2.9 2.9M18.55 5.45l-2.9 2.9M8.35 15.65l-2.9 2.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+            <h1>今天想了解什么？</h1>
+          </div>
+
+          <div class="composer">
+            <textarea id="homeInput" placeholder="描述你的症状、检查结果，或者上传一份资料……"></textarea>
+            <div class="composer-foot">
+              <div class="composer-tools">
+                <button class="round-tool" title="添加附件">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                </button>
+                <button class="mode-select">标准问诊 <span style="font-size:9px">⌄</span></button>
+              </div>
+              <button class="send" onclick="startChat()">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="quick-title">你也可以从这些问题开始</div>
+          <div class="quick">
+            <button onclick="quickFill(this)">跑步后膝盖疼，休息后缓解</button>
+            <button onclick="quickFill(this)">最近血压偏高怎么办</button>
+            <button onclick="quickFill(this)">长期睡不好，白天头晕</button>
+            <button onclick="quickFill(this)">血糖波动比较大</button>
+          </div>
+
+          <div class="home-note">
+            沐诊提供基于公开医学资料与患者档案的健康信息辅助，不用于替代医生面诊、诊断或急诊判断。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-chat">
+      <div class="chat">
+        <div class="chat-scroll">
+          <div class="thread">
+            <h1 class="conversation-title">骨膜炎剧烈运动疼痛咨询</h1>
+
+            <div class="user-wrap">
+              <div class="user-bubble" id="userQuestion">我骨膜炎，剧烈运动会疼，最近跑步之后更明显。</div>
+            </div>
+
+            <div class="assistant">
+              <div class="assistant-label">
+                <span class="mini-mark">✦</span>
+                <span>沐诊</span>
+              </div>
+
+              <div class="activity" id="activity">
+                <button class="activity-head" onclick="toggleActivity()">
+                  <div class="activity-left">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 7.5h14M5 12h9M5 16.5h6" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/></svg>
+                    <span>已检索并整理相关医学证据</span>
+                    <span class="activity-meta">8 个来源 · 38.6 秒</span>
+                  </div>
+                  <span id="activityChevron">⌄</span>
+                </button>
+                <div class="activity-body">
+                  <div class="activity-step">
+                    <div class="step-dot">✓</div>
+                    <div><div class="step-title">理解问题与风险分级</div><div class="step-desc">识别运动后疼痛、既往骨膜炎与需要排除的危险信号</div></div>
+                    <div class="step-time">0.8s</div>
+                  </div>
+                  <div class="activity-step">
+                    <div class="step-dot">✓</div>
+                    <div><div class="step-title">检索外部医学证据</div><div class="step-desc">从指南、医院科普与运动医学资料中筛选相关内容</div></div>
+                    <div class="step-time">6.8s</div>
+                  </div>
+                  <div class="activity-step">
+                    <div class="step-dot">✓</div>
+                    <div><div class="step-title">关联患者档案</div><div class="step-desc">核对既往史、用药与已上传检查信息</div></div>
+                    <div class="step-time">0.4s</div>
+                  </div>
+                  <div class="activity-step">
+                    <div class="step-dot">✓</div>
+                    <div><div class="step-title">证据筛选与整理</div><div class="step-desc">18 条候选结果中保留 8 条高相关来源</div></div>
+                    <div class="step-time">29.8s</div>
+                  </div>
+                </div>
+              </div>
+
+              <article class="answer">
+                <h2>从目前信息看，更像是运动负荷增加后，局部组织受到持续刺激。</h2>
+
+                <p>你提到的是<strong>“剧烈运动后疼痛明显加重”</strong>。这种模式更常见于过度负荷、重复冲击或局部软组织／骨膜刺激，但仅凭线上描述不能确认具体病因。</p>
+
+                <div class="callout">
+                  如果出现明显肿胀、夜间痛、疼痛持续加重、局部红热，或者已经影响正常负重和走路，应尽快到骨科或运动医学门诊进一步评估，而不是继续增加运动量。
+                </div>
+
+                <h3>这几天可以先怎么处理</h3>
+                <ul>
+                  <li><strong>暂时减少高冲击运动：</strong>先停跑跳、冲刺、爬坡等会诱发疼痛的训练，观察 5–7 天变化。</li>
+                  <li><strong>不要完全静止：</strong>在不诱发疼痛的情况下，可以保留低冲击活动与轻度活动度训练。</li>
+                  <li><strong>记录疼痛特征：</strong>包括疼痛准确位置、持续时间、有无肿胀，以及日常走路是否也会痛。</li>
+                  <li><strong>持续不缓解时检查：</strong>如果一两周仍明显疼痛，建议结合骨科／运动医学查体决定是否需要影像检查。</li>
+                </ul>
+
+                <h3>我还想确认一件事</h3>
+                <p>你现在疼的位置更接近<strong>膝盖周围</strong>，还是<strong>小腿胫骨内侧／前侧</strong>？不同位置对应的常见原因和下一步检查会不太一样。</p>
+
+                <div class="source-row">
+                  <span class="source">运动医学指南</span>
+                  <span class="source">三甲医院科普</span>
+                  <span class="source">康复医学资料</span>
+                  <span class="source">+5 个来源</span>
+                </div>
+
+                <div class="feedback">
+                  <button title="有帮助">♡</button>
+                  <button title="复制">⧉</button>
+                  <button title="更多">···</button>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <div class="dock-wrap">
+          <div class="dock">
+            <input placeholder="继续追问……" />
+            <div class="dock-foot">
+              <div class="dock-left">
+                <button class="round-tool" title="添加附件">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                </button>
+                <button class="mode-select">标准问诊 <span style="font-size:9px">⌄</span></button>
+              </div>
+              <div class="dock-right">
+                <button class="send">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-detail">
+      <div class="detail">
+        <div class="detail-inner">
+          <div class="badge">患者档案 · 已关联</div>
+          <h1 class="detail-title">患者 20260810-1758</h1>
+          <div class="detail-sub">仅展示与当前问诊相关的信息</div>
+
+          <div class="detail-grid">
+            <article class="paper">
+              <h2>本次问诊摘要</h2>
+              <p>患者主诉为运动后局部疼痛，既往自述“骨膜炎”。当前需要进一步确认疼痛具体部位、持续时间、局部肿胀情况与负重能力。</p>
+
+              <h2 style="margin-top:30px">需要补充的信息</h2>
+              <ul>
+                <li>疼痛精确位置：膝周、胫骨前侧或内侧、踝部附近等。</li>
+                <li>静息状态是否仍疼，夜间是否会痛醒。</li>
+                <li>近期运动量是否突然增加，包括跑量、速度和坡度。</li>
+                <li>是否已有影像、骨科查体或既往诊断材料。</li>
+              </ul>
+
+              <h2 style="margin-top:30px">当前辅助建议</h2>
+              <p>在明确病因前，优先减少会明显诱发疼痛的高冲击训练；若疼痛持续、出现肿胀或影响日常负重，建议线下就医进一步评估。</p>
+            </article>
+
+            <aside class="aside">
+              <h3>档案概览</h3>
+              <div class="meta-block">
+                <div class="meta-label">当前会话</div>
+                <div class="meta-value">骨膜炎剧烈运动疼痛咨询</div>
+              </div>
+              <div class="meta-block">
+                <div class="meta-label">最近更新时间</div>
+                <div class="meta-value">2026/09/17 11:29</div>
+              </div>
+              <div class="meta-block">
+                <div class="meta-label">证据来源</div>
+                <div class="meta-value">8 条已筛选医学资料</div>
+              </div>
+              <div class="meta-block">
+                <div class="meta-label">当前状态</div>
+                <div class="meta-value" style="color:#667e72">● 已完成辅助分析</div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const titleMap = {
+  home:"慢病诊疗助手 ▾",
+  chat:"骨膜炎剧烈运动疼痛咨询 ▾",
+  detail:"患者档案 ▾"
+};
+
+function showView(name, btn){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("view-"+name)?.classList.add("active");
+  document.querySelectorAll(".side-btn").forEach(b=>b.classList.remove("active"));
+  const nav = btn || document.querySelector('.side-btn[data-view="'+name+'"]');
+  if(nav) nav.classList.add("active");
+  document.getElementById("topTitle").textContent = titleMap[name] || "沐诊";
+}
+
+function quickFill(btn){
+  const box=document.getElementById("homeInput");
+  box.value=btn.textContent;
+  box.focus();
+}
+function startChat(){
+  const box=document.getElementById("homeInput");
+  const q=(box.value||"").trim();
+  if(q) document.getElementById("userQuestion").textContent=q;
+  showView("chat");
+}
+function toggleActivity(){
+  const a=document.getElementById("activity");
+  a.classList.toggle("open");
+  document.getElementById("activityChevron").textContent=a.classList.contains("open")?"⌃":"⌄";
+}
+</script>
+</body>
+</html>

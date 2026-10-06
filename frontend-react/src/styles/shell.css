@@ -1,0 +1,538 @@
+/* =========================================================================
+ * AppShell 共享样式（迁移自 Vue 版 App.vue + GlobalNavbar.vue scoped 样式）
+ * 严格按 muzhen-spring-equinox.html 的 .app/.sidebar/.main/.topbar 词汇。
+ * ========================================================================= */
+
+/* .app 主网格：288px 侧栏（规格 §3，与 Chat 内嵌历史 rail 同宽）+ 1fr 主区；
+   680px 以下变单列、侧栏隐藏（移动端导航走 AppSidebar 的汉堡抽屉） */
+.app {
+  height: 100vh;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 288px minmax(0, 1fr);
+  background: var(--paper);
+}
+.app.no-shell { display: block; } /* 登录页不套外壳 */
+
+/* 桌面端折叠（规格 §3 侧栏可折叠）：0 宽 + Topbar 面板开关展开；
+   ≤680px 本就单列隐藏，折叠类不产生额外影响 */
+.app.side-collapsed { grid-template-columns: minmax(0, 1fr); }
+.app.side-collapsed .sidebar { display: none; }
+
+.main {
+  height: 100vh;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===== 左侧栏（中性单色：比主背景深半档的灰底，无竖向分隔线；规格 §3） ===== */
+.sidebar {
+  min-width: 0;
+  background: var(--paper-2);
+  display: flex;
+  flex-direction: column;
+  padding: 12px 10px 10px;
+  width: 288px;
+  flex: 0 0 288px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow: hidden auto;
+  /* 低于 Radix 弹层（z-50）：遮罩必须能盖住侧栏 */
+  z-index: 30;
+}
+
+.brand {
+  height: 45px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 10px 5px;
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: .01em;
+  color: var(--ink-strong);
+  text-decoration: none;
+}
+.brand-mark {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.side-btn {
+  width: 100%;
+  height: 39px;
+  border: 0;
+  background: transparent;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  text-align: left;
+  color: var(--ink-soft); /* 导航项主文字＝文本次级 #525252（规格 §3） */
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+/* 导航项 hover：不做底色突出，改为黑色加粗，移开还原（用户指定） */
+.side-btn:hover { background: transparent; color: var(--ink-strong); font-weight: 700; }
+.side-btn:hover .side-icon { color: var(--ink-strong); }
+.side-btn:hover .material-symbol { font-variation-settings: 'FILL' 0, 'wght' 700; }
+/* 激活项：不做色块突出，改为文字与图标加粗（用户指定） */
+.side-btn.active { background: transparent; color: var(--ink-strong); font-weight: 700; }
+.side-icon { width: 18px; height: 18px; display: grid; place-items: center; color: var(--muted-2); flex: 0 0 18px; }
+.side-btn.active .side-icon { color: var(--ink-strong); font-weight: 700; }
+.side-btn.active .material-symbol { font-variation-settings: 'FILL' 0, 'wght' 700; }
+/* 新问诊：近黑实底胶囊（底＝foreground 主色、字＝background，规格 §3；与激活项浅灰填充不再同形） */
+.new-btn {
+  margin-top: 4px;
+  height: 44px;
+  background: var(--color-foreground);
+  border: 0;
+  border-radius: 9999px;
+  color: var(--color-background);
+}
+.side-btn.new-btn .side-icon { color: inherit; }
+.new-btn:hover,
+.side-btn.new-btn:hover { background: var(--color-accentHover); color: var(--color-background); }
+.side-btn.new-btn.active { background: var(--color-foreground); color: var(--color-background); }
+
+.divider { height: 1px; background: var(--line); margin: 9px 8px; }
+.side-heading {
+  padding: 7px 10px 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--muted-2);
+}
+.recents {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* 滚动条默认隐藏，悬停/滚动时才显现（macOS overlay 风格） */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.recents:hover { scrollbar-color: color-mix(in srgb, var(--color-black) 22%, transparent) transparent; }
+.recents::-webkit-scrollbar { width: 6px; }
+.recents::-webkit-scrollbar-track { background: transparent; }
+.recents::-webkit-scrollbar-thumb { background: transparent; border-radius: 9999px; }
+.recents:hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-black) 22%, transparent); }
+/* 会话行容器：承载 hover 才显现的操作钮（规格 §3） */
+.recent-row { position: relative; flex: 0 0 auto; }
+.recent {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+.recent:hover { background: color-mix(in srgb, var(--color-black) 5%, transparent); }
+.recent.active { background: var(--accent-soft); }
+.recent-title {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color var(--transition-fast);
+}
+.recent.active .recent-title { color: var(--ink-strong); }
+.recent-meta { font-size: 10px; color: var(--muted-2); margin-top: 4px; }
+/* 会话行操作钮（改名/删除）：hover 或键盘聚焦行时才显现；删除钮 hover 走危险红 */
+.recent-actions {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+}
+.recent-row:hover .recent-actions,
+.recent-row:focus-within .recent-actions { opacity: 1; pointer-events: auto; }
+.recent-row.editing .recent-actions { display: none; }
+.recent-action {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  color: var(--muted-2);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+.recent-action:hover { background: color-mix(in srgb, var(--color-black) 8%, transparent); color: var(--ink-strong); }
+.recent-action.danger:hover { color: var(--color-danger); }
+/* 行内重命名输入框（Enter 提交 / Esc 取消 / 失焦提交） */
+.recent-rename {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-strong);
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  outline: none;
+}
+.recent-rename:focus { border-color: var(--ink-soft); }
+
+/* 底部用户区：无边框极简行，整行可点、hover 圆角块反馈 */
+.profile {
+  padding: 10px 7px 1px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+button.profile {
+  width: fit-content;
+  max-width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  border-radius: 10px;
+  cursor: pointer;
+}
+button.profile:hover { background: color-mix(in srgb, var(--color-black) 5%, transparent); }
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ink-strong);
+  color: var(--color-white);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex: 0 0 30px;
+}
+.profile-title {
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--ink-strong);
+  text-decoration: none;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-sub { font-size: 9.5px; color: var(--muted); margin-top: 2px; }
+
+/* 工具按钮（幽灵钮：无底，hover 黑 5% 圆角块） */
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+.icon-btn:hover { background: color-mix(in srgb, var(--color-black) 5%, transparent); color: var(--ink-strong); }
+
+/* ===== 顶部栏（严格按 HTML 的 .topbar：绝对定位浮动） ===== */
+/* 桌面端不显示顶栏（折叠开关已移入侧栏品牌行）；≤680px 保留汉堡导航。
+   显隐只在这两行声明：下面的定位块不得再写 display（同优先级后置声明会
+   覆盖回 none，导致 ≤680 的 display:flex 失效、移动端汉堡导航永不可见） */
+.topbar { display: none; }
+@media (max-width: 680px) { .topbar { display: flex; } }
+.topbar {
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px 0 19px;
+  pointer-events: none;
+}
+.topbar > * { pointer-events: auto; }
+.top-left, .top-right { display: flex; align-items: center; gap: 6px; }
+/* 顶栏透明融入主底：标题为纯文本标签 */
+.topbar-title {
+  height: 32px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.ghost {
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.ghost:hover { background: color-mix(in srgb, var(--color-black) 5%, transparent); }
+/* 状态胶囊 ghost 化：去底色与描边，融入纸白主底 */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 29px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 10.5px;
+  color: var(--ink-soft);
+}
+.status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--success);
+  display: inline-block;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 18%, transparent);
+  animation: pulse 2s ease-in-out infinite;
+}
+.status.bad i { background: var(--color-danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 18%, transparent); }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+
+/* ===== 账户详情抽屉 ===== */
+/* ===== 账户抽屉（设置列表式：分区 + 分隔线 + 偏好分行 + 退出沉底） ===== */
+.account-drawer {
+  width: 100%;
+  height: 100%;
+  background: var(--color-surface, var(--paper));
+  padding: 26px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.drawer-head { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 20px; }
+.drawer-avatar {
+  width: 60px; height: 60px; border-radius: 9999px;
+  background: var(--color-primary, #1B1B1B); color: var(--color-primary-foreground, #FAFAFA);
+  display: grid; place-items: center;
+}
+.drawer-name { font-size: 17px; color: var(--ink-strong); font-family: var(--font-serif, serif); }
+.drawer-role { font-size: 11.5px; color: var(--color-textTertiary, #8F8F8F); }
+.account-drawer nav { display: flex; flex-direction: column; gap: 1px; border-top: 1px solid var(--mono-hairline, var(--line-soft)); padding-top: 10px; }
+.account-drawer nav a {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 10px; border-radius: 10px;
+  text-decoration: none; color: var(--color-textSecondary, #525252); font-size: 14px;
+  transition: background .15s var(--ease-smooth, ease), color .15s var(--ease-smooth, ease);
+}
+.account-drawer nav a:hover { background: color-mix(in srgb, var(--color-black) 5%, transparent); color: var(--ink-strong); }
+.account-drawer nav a .side-icon { color: var(--color-textTertiary, #8F8F8F); }
+.account-drawer nav a:hover .side-icon { color: var(--ink-strong); }
+.drawer-section-title {
+  margin-top: 18px; padding: 0 10px 6px;
+  font-size: 11.5px; letter-spacing: .04em; color: var(--color-textTertiary, #8F8F8F);
+  border-top: 1px solid var(--mono-hairline, var(--line-soft)); padding-top: 14px;
+}
+.drawer-prefs { display: flex; flex-direction: column; }
+.pref-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px; border-radius: 10px;
+}
+.pref-row + .pref-row { border-top: 1px solid var(--mono-hairline, var(--line-soft)); }
+.pref-label { font-size: 13.5px; color: var(--color-textSecondary, #525252); }
+.pref-right { display: inline-flex; align-items: center; gap: 8px; }
+.pref-value { font-size: 12.5px; color: var(--color-textTertiary, #8F8F8F); }
+.logout-button {
+  margin-top: auto;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 22%, transparent);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-danger);
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13.5px;
+  transition: background .15s var(--ease-smooth, ease);
+}
+.logout-button:hover { background: color-mix(in srgb, var(--color-danger) 8%, transparent); }
+
+/* 移动端抽屉 */
+.mobile-drawer {
+  width: min(280px, 86vw);
+  height: 100%;
+  background: var(--paper);
+  padding: 16px 14px;
+  box-shadow: 18px 0 44px color-mix(in srgb, var(--color-black) 20%, transparent);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 主内容区：topbar 让内容上偏，避免被遮挡 */
+.main > .main-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: 0; /* 桌面顶栏已移除；≤680px 顶栏（汉堡）显示时在媒体查询里补回 */
+  overflow: hidden;
+}
+
+/* ===== 全局 4px 细滚动条（规格 §2：thumb 黑 12%，hover 25%；覆盖所有滚动面） ===== */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--color-black) 12%, transparent) transparent; }
+*::-webkit-scrollbar { width: 4px; height: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-black) 12%, transparent); border-radius: 9999px; }
+*::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--color-black) 25%, transparent); }
+
+/* 夜阑分支（html[data-theme='night']，stores/settings.ts 挂载）：黑系幽灵填充在深底不可见，翻为白系。
+   .models-cat/.models-provider 底样式在 Admin.tsx 内联 <style>（黑 5% hover），同文档全局生效故在此统一翻白 */
+[data-theme='night'] .side-btn:hover,
+[data-theme='night'] .recent:hover,
+[data-theme='night'] button.profile:hover,
+[data-theme='night'] .icon-btn:hover,
+[data-theme='night'] .ghost:hover,
+[data-theme='night'] .account-drawer nav a:hover,
+[data-theme='night'] .user-menu-item:hover,
+[data-theme='night'] .models-cat:hover,
+[data-theme='night'] .models-provider:hover,
+[data-theme='night'] .recent-action:hover { background: color-mix(in srgb, var(--color-white) 8%, transparent); }
+
+/* 移动端：侧栏隐藏 */
+@media (max-width: 680px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main { height: auto; min-height: 100vh; }
+  /* 顶栏（≤680 显示的汉堡导航，54px 浮动 absolute）不再遮住内容顶：主内容补回等高 padding。
+     .main 为 flex column 且 Tailwind preflight 全局 border-box，padding 向内占位不撑破 100vh/100vh 高度锁 */
+  .main > .main-content { padding-top: 54px; }
+  /* 触控目标 ≥44px：汉堡等图标钮（视觉/命中同步放大；.icon-btn 仅 Topbar 汉堡与桌面折叠钮使用） */
+  .icon-btn { width: 44px; height: 44px; }
+  /* 侧栏导航项 39px → 44px 兜底：移动抽屉里的 .side-btn 实际由 AppSidebar 内联 49px 接管，
+     此规则只覆盖未来无内联样式的实例（CSS 高度低于内联，不会改变现有视觉） */
+  .side-btn { height: 44px; }
+  /* 会话行改名/删除钮：基础样式靠 hover/focus-within 显现（pointer-events:none），
+     触屏无 hover 且钮仅 24px —— 移动抽屉复用同一 renderRecentRow，改为常显并放大到
+     ≥44px 触控目标（桌面侧栏 ≤680 整体 display:none，不受影响）；
+     标题右侧预留双钮宽度，避免文字被透明钮盖住 */
+  .recent-actions { opacity: 1; pointer-events: auto; }
+  .recent-action { width: 44px; height: 44px; border-radius: 10px; }
+  .recent-title { padding-right: 86px; }
+}
+
+/* 打印：壳层不进纸（侧栏/顶栏隐藏），并解除 100vh + overflow 锁定，
+   否则长会话打印会被裁到约一页（页面各自的 @media print 负责隐藏页内工具栏） */
+@media print {
+  html, body { height: auto !important; }
+  .sidebar, .topbar { display: none !important; }
+  .app,
+  .app .main { height: auto !important; min-height: 0 !important; overflow: visible !important; }
+  .app .main { display: block !important; }
+  .main > .main-content {
+    height: auto !important;
+    padding-top: 54px !important; /* 移动端顶栏（汉堡导航）仍在，保留让位 */
+    overflow: visible !important;
+    display: block !important;
+  }
+}
+
+/* 侧栏折叠后：主区左上角浮动展开钮 */
+.side-expand {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 40;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--color-borderLight, #E5E5E5);
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+  color: var(--color-textSecondary, #525252);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+}
+.side-expand:hover { color: var(--ink-strong); }
+
+/* ===== 头像弹出菜单（Kimi 式：贴底弹出，非侧栏抽屉） ===== */
+/* 底部用户行：与上方导航项左缘对齐（头像中心对齐导航图标中心） */
+/* 底部用户行：头像+用户名靠左（高亮只覆盖它），手机图标推到侧栏右缘（与导航项右边距一致） */
+/* 头像左边与「历史记录」标题文字首字左对齐（标题 x=内容边+12.5，减去按钮左 padding 9 ≈ 4px 缩进） */
+.profile-row { display: flex; align-items: center; width: 100%; padding-left: 4px; padding-right: 12.5px; }
+.profile-wrap { position: relative; }
+.profile-phone {
+  margin-left: auto;
+  width: 38px; height: 38px; flex: 0 0 38px;
+  border: 0; background: transparent; cursor: default;
+  border-radius: 9px; display: grid; place-items: center;
+  color: var(--color-textTertiary, #8F8F8F);
+}
+.user-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-borderLight);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, .12), 0 2px 8px -2px rgba(0, 0, 0, .06);
+  padding: 6px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  animation: menu-in .16s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes menu-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.user-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; border: 0; background: transparent; cursor: pointer;
+  padding: 10px 10px; border-radius: 9px;
+  font-size: 13.5px; color: var(--color-textSecondary, #525252); font-family: inherit;
+  text-align: left;
+  transition: background .15s var(--ease-smooth, ease), color .15s var(--ease-smooth, ease);
+}
+.user-menu-item:hover { background: color-mix(in srgb, var(--color-black) 5%, transparent); color: var(--ink-strong); }
+.user-menu-item .material-symbol { color: var(--color-textTertiary, #8F8F8F); }
+.user-menu-item:hover .material-symbol { color: var(--ink-strong); }
+.user-menu-item.danger { color: var(--color-danger, #C0392B); }
+.user-menu-item.danger .material-symbol { color: var(--color-danger, #C0392B); }
+.user-menu-item.danger:hover { background: color-mix(in srgb, var(--color-danger, #C0392B) 8%, transparent); color: var(--color-danger, #C0392B); }
+.user-menu-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; }
+.user-menu-label { display: inline-flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--color-textSecondary, #525252); }
+.user-menu-label .material-symbol { color: var(--color-textTertiary, #8F8F8F); }
+.user-menu-sep { height: 1px; background: var(--color-borderLight); margin: 5px 6px; }

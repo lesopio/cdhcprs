@@ -1,0 +1,49 @@
+/* 本地字体：避开 npm 大包的网络下载问题，直接服务 public/fonts/ 下的子集文件 */
+
+/* Noto Serif SC · 中文简体 · 600（仅用于大标题） */
+@font-face {
+  font-family: 'Noto Serif SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('/fonts/noto-serif-sc-chinese-simplified-600-normal.woff2') format('woff2'),
+       url('/fonts/noto-serif-sc-chinese-simplified-600-normal.woff') format('woff');
+}
+
+/* Material Symbols Outlined · 拉丁 · 400（图标） */
+/* font-display: block：加载完成前不渲染连字原文（swap 会让图标位闪现 personal_injury 等英文） */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-display: block;
+  font-weight: 400;
+  src: url('/fonts/material-symbols-outlined-latin-400-normal.woff2') format('woff2'),
+       url('/fonts/material-symbols-outlined-latin-400-normal.woff') format('woff');
+}
+
+/* 图标类（严格对齐 Vue 版 MaterialSymbol.vue 的样式） */
+.material-symbol {
+  font-family: 'Material Symbols Outlined';
+  font-weight: 400;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'liga';
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 固定 1em 方框：字体未加载/连字未生效时也不会把布局撑爆 */
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  vertical-align: middle;
+  line-height: 1;
+  /* 可被 --ms-size 覆盖尺寸（沿用 Vue 版约定） */
+  font-size: var(--ms-size, 24px);
+}

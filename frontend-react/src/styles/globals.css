@@ -1,0 +1,239 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* =========================================================================
+ * shadcn / Tailwind v4 变量层（四主题系统 v4）
+ * 基准：docs/ui-spec-v4-themes.md §1（参考 vercel/chatbot globals.css）。
+ * Tailwind utility 类（bg-primary、text-muted-foreground 等）经由
+ * @theme inline 映射到这些变量；shadcn/ui 组件也消费这些变量。
+ *
+ * 全部 shadcn 槽位经 var() 回指 tokens.css 的主题层（var() 惰性解析，与 main.tsx
+ * 的加载次序无关；tokens.css 后加载，同名变量以 tokens.css 为准）。四个主题块
+ * （[data-theme='graphite'|'paper'|'spring'|'night']）给齐颜色 token 后，本文件的
+ * 槽位随 html[data-theme] 自动跟随，此处不维护任何主题的字面色值。主按钮：
+ * --primary/--accent → var(--ink-strong)（浅色近黑，night 反白），实底钮前景字
+ * 统一 var(--paper)（浅色纸面 / night #262626），恰好是规格的按钮配对——
+ * --destructive-foreground/--success-foreground 同构链化后，night 的浅底
+ * 危险/状态实底件自动换深字（对比 ≥4.5:1）。
+ *
+ * 注意：--muted 在 tokens.css 中是「文本弱化灰」（shell.css / router /
+ * LargeFontSwitcher 消费），与 shadcn 的 muted 表面语义不同名同命；Tailwind
+ * 的 bg-muted-* 工具类（ghost/outline hover、下拉聚焦、骨架屏等表面）统一
+ * 映射到浅表面 --color-bgSecondary，见下方映射块。
+ * ========================================================================= */
+:root {
+  --background: var(--paper);           /* 主背景（随主题） */
+  --foreground: var(--ink-strong);      /* 文本主色（随主题） */
+  --card: var(--surface);               /* 卡片 */
+  --card-foreground: var(--ink-strong);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink-strong);
+  --primary: var(--ink-strong);         /* 主按钮近黑（night 经 tokens 反白） */
+  --primary-foreground: var(--paper);   /* 近黑底 + 纸面字（night 反转为深字） */
+  --secondary: var(--accent-soft);      /* 选中级中性表面 */
+  --secondary-foreground: var(--ink-strong);
+  --muted-foreground: var(--ink-soft);  /* 文本弱化 */
+  --accent: var(--ink-strong);          /* shadcn accent 槽＝近黑强调（与 tokens.css 同名同值） */
+  --accent-foreground: var(--paper);
+  --destructive: var(--zhuzhu);         /* 危险/急危（功能位，随主题） */
+  --destructive-foreground: var(--paper); /* 危险实底字＝纸面色（night 浅底自动换深字） */
+  --success: var(--qinghuo);            /* 状态绿（功能位，随主题） */
+  --success-foreground: var(--paper);   /* 状态实底字＝纸面色（night 自动换深字） */
+  --warning: var(--zimoujin);           /* warning 中性化（随主题） */
+  --warning-foreground: var(--paper);
+  --border: var(--line);                /* hairline 描边（随主题） */
+  --input: var(--line);
+  --ring: #525252;                      /* 聚焦环：首帧兜底值＝石墨；四个主题块在 tokens.css 逐主题覆盖 */
+  --radius: 0.625rem;                   /* 圆角基准 10px（规格 §2） */
+
+  /*Tailwind color/radius/font 映射（真实自定义属性，供手写 CSS 与组件直接消费） */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--color-bgSecondary); /* muted 表面＝随主题浅表面（石墨 #F7F7F7/暖纸 #F0EEE6/春分 #F4F6F1/夜阑 #1F1F1F）；--muted 本体（文本弱化灰）归 tokens.css */
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent); /* 与 tokens.css 的 --color-accent（近黑）同名同值；shadcn accent 槽 */
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-family-base);
+  --font-serif: var(--font-family-serif);
+}
+
+/* 四主题切换：浅/深共用上面同一套 var() 引用，全部主题值由 tokens.css 的
+ * [data-theme='graphite'|'paper'|'spring'|'night'] 四个完整颜色块提供——
+ * night 下 --primary/--accent 经 --ink-strong 反白、--background/--border/--card
+ * 随 --paper/--line/--surface 变暗，--destructive/--success/--ring 等槽位或随链
+ * 跟随、或在主题块内显式覆盖。本文件不维护任何第二份主题字面值。
+ * （原类驱动的 .dark 分支为无 JS 挂载的死代码，已折叠进 night 主题并删除；
+ * 全站亦无 dark: 工具类消费，@custom-variant dark 一并移除。） */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--color-bgSecondary); /* 与上面 :root 映射一致：bg-muted 工具类＝随主题浅表面 */
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent); /* 同 :root 映射：shadcn accent 槽（近黑强调），与 tokens.css 同名同值 */
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-family-base);
+  --font-serif: var(--font-family-serif);
+}
+
+* { border-color: var(--border); }
+
+/* 根元素高度链：登录页 .auth-page{min-height:100%} 与各满屏视图都依赖它 */
+html, body, #root { height: 100%; }
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* sonner toaster 宽度限制（迁移自 Vue 版 app.css） */
+[data-sonner-toaster] { max-width: min(100vw - 32px, 420px); }
+[data-sonner-toast] { width: min(100%, 420px); }
+[data-sonner-toast] [data-content] { overflow-wrap: anywhere; white-space: normal; }
+
+/* Accordion 展开收起（Radix 的 data-state 驱动） */
+@keyframes accordion-down {
+  from { height: 0; opacity: 0; }
+  to { height: var(--radix-accordion-content-height); opacity: 1; }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); opacity: 1; }
+  to { height: 0; opacity: 0; }
+}
+.animate-accordion-down { animation: accordion-down 0.2s ease-out; }
+.animate-accordion-up { animation: accordion-up 0.2s ease-out; }
+
+/* 旋转关键帧：仅保留给 trace 步骤 running 图标等既有消费者
+ * （ActivityTrace.tsx 直接引用 spin；加载态请改用下方 thinking-dot/dot-pulse）。
+ * 1s+ 无限旋转的工具类 .animate-spin-slow 已按规格 §4.4 移除（无消费者）。 */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* =========================================================================
+ * 加载态 / 微动效（规格 §2，照 vercel globals.css）
+ * 无限旋转图标的替代：thinking-dots 三点跳动（1.4s）——发送中按钮、回答生成中
+ * 一律用 dots；组件侧用法：<span className="thinking-dot" style={{animationDelay:'0.15s'}}/>
+ * 或对手写 CSS 消费 animation: thinking-dot 1.4s ease-in-out infinite。
+ * ========================================================================= */
+@keyframes dot-pulse {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+@keyframes thinking-dot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+@keyframes message-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dot-pulse { animation: dot-pulse 1.4s ease-in-out infinite; }
+.thinking-dot { animation: thinking-dot 1.4s ease-in-out infinite; }
+.message-fade-in { animation: message-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.fade-up { animation: fade-up 0.25s var(--ease-spring) both; }
+.fade-in { animation: fade-in 0.2s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dot-pulse, .thinking-dot, .message-fade-in, .fade-up, .fade-in { animation: none; }
+}
+
+/* =========================================================================
+ * 细滚动条（规格 §2：4px，thumb 黑 12%、hover 25%；night 反白 10%/20%）
+ * 通用选择器特异性最低，组件级自定义滚动条样式仍可覆盖。
+ * ========================================================================= */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+[data-theme='night'] * {
+  scrollbar-color: rgba(255, 255, 255, 0.10) transparent;
+}
+*::-webkit-scrollbar { width: 4px; height: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); border-radius: 9999px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+[data-theme='night'] *::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.10); }
+[data-theme='night'] *::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.20); }
+*::-webkit-scrollbar-corner { background: transparent; }
+
+/* =========================================================================
+ * Markdown 正文（.markdown-body）
+ * 2026-09-30 自 components/MarkdownRenderer.tsx 迁入：原先每个 MarkdownRenderer
+ * 实例都注入一份 <style>（消息越多重复节点越多），现改为全局样式一份。
+ * 以下选择器与规则内容原样保留；SeniorChat 内 .sr-reply-card .markdown-body
+ * p/strong 覆盖（特异性更高）仍生效。颜色全部走 tokens.css 的 --color-* 变量，
+ * 四主题（graphite/paper/spring/night）自动跟随。
+ * ========================================================================= */
+.markdown-body{font-size:14px;line-height:1.85;color:var(--color-textSecondary);overflow-wrap:anywhere}
+.markdown-body h1,.markdown-body h2,.markdown-body h3{color:var(--color-textPrimary);line-height:1.35;margin:1.2em 0 .55em;font-weight:700;font-family:var(--font-family-serif)}
+.markdown-body h1{font-size:21px}.markdown-body h2{font-size:18px}.markdown-body h3{font-size:16px}
+.markdown-body p{margin:0 0 .9em}
+.markdown-body ul,.markdown-body ol{padding-left:1.5em;margin:0 0 1em}
+.markdown-body li{margin:.3em 0}
+.markdown-body strong{color:var(--color-textPrimary)}
+/* 链接/引用上标走规格 §1 的青冥 --color-link（青雘仅作辅色，不作链接色） */
+.markdown-body a{color:var(--color-link);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--color-link) 30%,transparent)}
+/* 规格 §4 禁渐变：blockquote 底改纯色嵌入面（保留 3px 左边线） */
+.markdown-body blockquote{margin:1em 0;padding:12px 16px;border-left:3px solid var(--color-accent);background:var(--color-surfaceMuted);color:var(--color-textSecondary);border-radius:0 8px 8px 0}
+.markdown-body table{width:100%;border-collapse:collapse;margin:1em 0}
+.markdown-body th,.markdown-body td{padding:8px 10px;border:1px solid var(--color-borderLight);text-align:left}
+.markdown-body th{background:var(--color-accentSoft)}
+.markdown-body code{padding:.15em .35em;border-radius:4px;background:var(--color-surfaceMuted);font-size:.9em}
+.markdown-body pre{overflow:auto;padding:14px;border-radius:9px;background:var(--color-surfaceMuted)}
+.markdown-body pre code.hljs{padding:0;background:transparent}
+.markdown-body .cite-ref{font-size:.7em;line-height:0;color:var(--color-link);margin-left:1px}
+.markdown-body .cite-ref a{color:var(--color-link);text-decoration:none;border:0}
+.markdown-body .cite-ref a:hover{text-decoration:underline}
