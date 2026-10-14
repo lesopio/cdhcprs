@@ -7,5 +7,6 @@ from .system_setting import SystemSetting
 from .patient_profile import PatientProfile
 from .attachment import Attachment
 from .web_mirror import WebMirrorItem
+from .registration_code import RegistrationCode
 
-__all__ = ["User", "UserDailyUsage", "Conversation", "Message", "SystemSetting", "PatientProfile", "Attachment", "WebMirrorItem"]
+__all__ = ["User", "UserDailyUsage", "Conversation", "Message", "SystemSetting", "PatientProfile", "Attachment", "WebMirrorItem", "RegistrationCode"]

@@ -68,7 +68,6 @@ const DEFAULT_CAPABILITIES: Capabilities = {
 interface PendingAttachment { id: number; name: string }
 
 /** 问诊模式循环（原首页逻辑迁入）：AI 主动问诊建 intake 会话，其余建 free */
-const CONSULT_MODES = ['标准问诊', 'AI 主动问诊', '自由问答'] as const
 /** 欢迎墙快捷问题（原首页迁入，点击填入输入框） */
 const QUICK_QUESTIONS = [
   '跑步后膝盖疼',
@@ -94,10 +93,17 @@ function timeGreeting(): string {
 /** intake.turn 载荷（useSseChat.onIntakeTurn 与 IntakeStepCard 的 questions 同形） */
 type IntakeTurnPayload = { reply: string; options: Array<{ label: string; multi: boolean }> }
 
-/** 从可能为 UTC 缺时区的字符串得到本地 Date */
+/** 从可能为 UTC 缺时区的字符串得到本地 Date。
+ *  SQLite/后端序列化出来的是无偏移的 UTC 字符串（"2026-10-11T08:30:45"），
+ *  ES 规范把无偏移的 ISO 时间按【本地时区】解析 → 差 8 小时；这里补 Z 归一为 UTC 再转本地。 */
 function toDate(value?: string): Date | null {
   if (!value) return null
-  const d = new Date(value)
+  let text = value
+  if (text.includes('T') && !/Z$/i.test(text) && !/[+-]\d{2}:?\d{2}$/.test(text)) {
+    // 截掉超长小数秒（JS 只认 3 位）再补 Z
+    text = text.replace(/\.\d+/, '') + 'Z'
+  }
+  const d = new Date(text)
   return isNaN(d.getTime()) ? null : d
 }
 function formatDate(value?: string): string {
@@ -312,17 +318,23 @@ export default function Chat() {
   // A3：AI 主动问诊的逐轮问题与作答记录（由 IntakeStepCard 承载）
   const [intakeQuestions, setIntakeQuestions] = useState<IntakeTurnPayload[]>([])
   const [intakeAnswers, setIntakeAnswers] = useState<string[][]>([])
+  const intakeCardRef = useRef<HTMLDivElement | null>(null)
   const [summaryOpen, setSummaryOpen] = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summaryText, setSummaryText] = useState('')
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([])
   // 附件小窗：+ 按钮点击弹出（锚定输入区上方），点窗外 / Esc 关闭
   const [attachOpen, setAttachOpen] = useState(false)
+  // 患者档案选择弹窗：输入区按钮弹出，选择后将 selectedProfileId 绑到会话
+  const [profilePickerOpen, setProfilePickerOpen] = useState(false)
+  const profilePickerRef = useRef<HTMLDivElement | null>(null)
   const [capabilities, setCapabilities] = useState<Capabilities>(DEFAULT_CAPABILITIES)
   const [renameTarget, setRenameTarget] = useState<Conversation | null>(null)
   const [renameValue, setRenameValue] = useState('')
   // 问诊入口合并（原首页逻辑迁入）：欢迎墙提供模式循环选择，发送时按模式建会话
-  const [consultModeIdx, setConsultModeIdx] = useState(0)
+  // 问诊模式由路径决定（用户要求去掉循环切换按钮）：/intake = AI 主动问诊，其余 = 自由问诊
+  const location = useLocation()
+  const isIntakeRoute = location.pathname === '/intake'
 
   const messageScrollerRef = useRef<HTMLDivElement | null>(null)
   const threadRef = useRef<HTMLDivElement | null>(null)
@@ -459,6 +471,15 @@ export default function Chat() {
     void loadMessages(currentId)
   }, [currentId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 主动问诊卡片出现或更新时滚到底部让用户看到最新问题
+  useEffect(() => {
+    if (intakeQuestions.length === 0) return
+    const t = setTimeout(() => {
+      intakeCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }, 80)
+    return () => clearTimeout(t)
+  }, [intakeQuestions, intakeAnswers])
+
   // 挂载：拉档案 + 公共设置 + 会话列表 —— 三路并入同一个 Promise.allSettled 全并发
   //（perf：原版 conversations 串行在档案/设置之后，现在三路同时出网）；
   // 全部落定并应用后再放开 bootReady（欢迎墙等三路就绪，语义与原串行版一致）
@@ -501,7 +522,6 @@ export default function Chat() {
   // - ?c= / ?conversation=：切换到指定会话（侧栏最近会话、长辈模式报告入口）
   // - ?new=1 或参数从有 c 变为无：回到欢迎墙（唯一问诊入口）
   // lastQueryRef 初始为 ''：挂载带参时不被跳过；挂载裸 /chat 时（''===''）静默
-  const location = useLocation()
   const lastQueryRef = useRef('')
   useEffect(() => {
     const key = location.search
@@ -519,6 +539,11 @@ export default function Chat() {
         if (mode === 'intake') {
           const conv = await createConversation(q || 'AI 主动问诊', selectedProfileId || null, null, 'intake')
           if (conv && q) void sendMessage(q, [], conv.id)
+        } else if (mode === 'guided-send') {
+          // 手动分诊页跳转过来：会话已建好（c 参数携带 id），只需切到该会话并发送主诉
+          const convId = c ? Number(c) : null
+          if (convId) setCurrentId(convId)
+          if (q && convId) void sendMessage(q, [], convId)
         } else if (mode === 'guided') {
           // A2：分诊改为对话流内嵌 TriageFlow（q 忽略）；需先回到无会话的欢迎墙态
           setTriageDraftActive(true)
@@ -565,12 +590,11 @@ export default function Chat() {
       const attachmentIds = pendingAttachments.map((a) => a.id)
       if (!currentId) {
         // A1：欢迎墙是唯一入口 —— 无会话时按所选模式创建会话并发送草稿
-        const isIntake = CONSULT_MODES[consultModeIdx] === 'AI 主动问诊'
         const conv = await createConversation(
-          isIntake ? 'AI 主动问诊' : '自由问诊',
+          isIntakeRoute ? 'AI 主动问诊' : '自由问诊',
           selectedProfileId || null,
           null,
-          isIntake ? 'intake' : 'free',
+          isIntakeRoute ? 'intake' : 'free',
         )
         if (!conv) return // 创建失败（拦截器已提示）：保留草稿与附件
         setPendingAttachments([])
@@ -585,7 +609,7 @@ export default function Chat() {
       submittingRef.current = false
     }
     scrollToBottom(true)
-  }, [draft, pendingAttachments, currentId, selectedProfileId, consultModeIdx, createConversation, sendMessage, scrollToBottom])
+  }, [draft, pendingAttachments, currentId, selectedProfileId, isIntakeRoute, createConversation, sendMessage, scrollToBottom])
 
   /** intake 选择回传（消息体内旧 IntakeOptions 的兜底路径） */
   const handleIntakeSubmit = useCallback(
@@ -801,8 +825,11 @@ export default function Chat() {
     })
 
   const onAttachmentSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files
-    if (!fileList || !fileList.length) return
+    // input.files 是活引用：下面 await 建会话期间组件重挂（欢迎墙→会话态 composer 换位）
+    // 会把 FileList 清空，必须先快照再进任何异步（同 SeniorChat 教训）
+    const files = Array.from(e.target.files || []).slice(0, capabilities.vl_max_images)
+    if (attachmentInputRef.current) attachmentInputRef.current.value = ''
+    if (!files.length) return
     // 欢迎墙态（无会话）也可上传：先自动建「自由问诊」会话再走既有上传流程；
     // 建会话失败（拦截器已提示）时放弃本次选择，等价于原 currentId 守卫
     let targetId = currentId
@@ -811,20 +838,20 @@ export default function Chat() {
       if (!conv) return
       targetId = conv.id
     }
-    const files = Array.from(fileList).slice(0, capabilities.vl_max_images)
     for (const file of files) {
-      if (file.size / 1024 / 1024 > capabilities.vl_max_image_mb) {
-        notify.error(`${file.name} 超过 ${capabilities.vl_max_image_mb}MB 限制`)
-        continue
-      }
       try {
+        // 只上传缩图：公网上行慢（实测 ~72KB/s），原图动辄几 MB 会拖到请求超时「卡住」；
+        // 视觉模型端 analysis_path || storage_path 回退，存 2048px JPEG 即可，原文件不出本机
         const analysis = await resizeForAnalysis(file)
-        const { data } = await chatAPI.uploadAttachment(targetId, file, analysis)
+        if (analysis.size / 1024 / 1024 > capabilities.vl_max_image_mb) {
+          notify.error(`${file.name} 超过 ${capabilities.vl_max_image_mb}MB 限制`)
+          continue
+        }
+        const { data } = await chatAPI.uploadAttachment(targetId, analysis, file.name)
         const record = data as { id: number; filename?: string }
         setPendingAttachments((prev) => [...prev, { id: record.id, name: record.filename || file.name }])
       } catch { /* 拦截器已提示 */ }
     }
-    if (attachmentInputRef.current) attachmentInputRef.current.value = ''
   }
   const removePendingAttachment = async (att: PendingAttachment) => {
     try { await chatAPI.deleteAttachment(att.id) } catch { /* noop */ }
@@ -975,17 +1002,76 @@ export default function Chat() {
                 <MaterialIcon name={recording ? 'stop' : 'mic'} size={20} />
               </button>
             )}
+            {/* 患者档案选择：弹出小窗选人，选中后在按钮右侧内联展示 */}
+            <div className="attach-anchor" ref={profilePickerRef}>
+              <button
+                className={`composer-tool${selectedProfileId ? ' on' : ''}`}
+                type="button"
+                title="选择患者档案"
+                aria-haspopup="dialog"
+                aria-expanded={profilePickerOpen}
+                onClick={() => setProfilePickerOpen((v) => !v)}
+              >
+                <MaterialIcon name="folder_shared" size={20} />
+              </button>
+              {/* 选中档案内联 chip（紧跟按钮右侧，在输入框内部） */}
+              {selectedProfileId > 0 && (() => {
+                const p = profiles.find((x) => x.id === selectedProfileId)
+                if (!p) return null
+                return (
+                  <span className="dock-profile-chip" onClick={() => setProfilePickerOpen(false)}>
+                    <MaterialIcon name="person" size={12} />
+                    {p.name || '未命名'}
+                    <button type="button" onClick={(e) => { e.stopPropagation(); onSelectProfile(0) }} aria-label="取消关联">
+                      <MaterialIcon name="close" size={12} />
+                    </button>
+                  </span>
+                )
+              })()}
+              {profilePickerOpen && (
+                <div className="profile-pop" role="dialog" aria-label="选择患者档案">
+                  <button
+                    type="button"
+                    className="attach-close"
+                    aria-label="关闭"
+                    onClick={() => setProfilePickerOpen(false)}
+                  >
+                    <MaterialIcon name="close" size={16} />
+                  </button>
+                  <div className="profile-pop-title">选择患者档案</div>
+                  <ul className="profile-pop-list">
+                    <li>
+                      <button
+                        type="button"
+                        className={selectedProfileId === 0 ? 'active' : ''}
+                        onClick={() => { onSelectProfile(0); setProfilePickerOpen(false) }}
+                      >
+                        <span className="profile-pop-icon"><MaterialIcon name="person_off" size={18} /></span>
+                        <span>不关联档案</span>
+                      </button>
+                    </li>
+                    {profiles.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          className={selectedProfileId === p.id ? 'active' : ''}
+                          onClick={() => { onSelectProfile(p.id); setProfilePickerOpen(false) }}
+                        >
+                          <span className="profile-pop-icon"><MaterialIcon name="person" size={18} /></span>
+                          <span>
+                            <strong>{p.name || '未命名'}</strong>
+                            <small>{p.gender ? (p.gender === 'male' ? '男' : p.gender === 'female' ? '女' : p.gender) : ''}{p.age ? ` · ${p.age}岁` : ''}</small>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {profiles.length === 0 && <p className="attach-hint">暂无档案，请先在「患者档案」页创建</p>}
+                </div>
+              )}
+            </div>
           </div>
           <div className="dock-right">
-            {/* 问诊模式档位：合并为单按钮循环切换（用户指定） */}
-            <button
-              type="button"
-              className="mode-tab"
-              onClick={() => setConsultModeIdx((i) => (i + 1) % CONSULT_MODES.length)}
-              title="切换问诊模式"
-            >
-              {CONSULT_MODES[consultModeIdx]}
-            </button>
             {/* A1：无会话时发送会自动建自由问诊会话（见 submitMessage），只需防重复提交；箭头常驻不换图标 */}
             <button className={`send-button${sending ? ' sending' : ''}`} type="submit" disabled={sending}>
               <MaterialIcon name="arrow_upward" size={18} />
@@ -1117,7 +1203,7 @@ export default function Chat() {
                 {/* 首页合并（用户需求）：logo 放问候语左侧，两个组件合并居中；问候语按浏览器时间变化 */}
                 <div className="welcome-hello">
                   <img className="welcome-logo" src="/logo.png" alt="橘泉智养" />
-                  <h1 className="welcome-title">{timeGreeting()}，有什么可以帮您的</h1>
+                  <h1 className="welcome-title">{timeGreeting()}，{isIntakeRoute ? '来随便说说症状吧' : '有什么可以帮您的'}</h1>
                 </div>
                 {composerBlock}
                 <div className="welcome-quick">
@@ -1160,12 +1246,14 @@ export default function Chat() {
 
             {/* A3：AI 主动问诊步骤卡（逐轮问题统一在消息列表后承载） */}
             {intakeQuestions.length > 0 && (
-              <IntakeStepCard
-                questions={intakeQuestions}
-                answers={intakeAnswers}
-                submitting={sending}
-                onAnswer={handleStepAnswer}
-              />
+              <div ref={intakeCardRef}>
+                <IntakeStepCard
+                  questions={intakeQuestions}
+                  answers={intakeAnswers}
+                  submitting={sending}
+                  onAnswer={handleStepAnswer}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -1382,9 +1470,6 @@ export default function Chat() {
         .dock-tools{display:flex;align-items:center;gap:2px}
         .dock-right{display:flex;align-items:center;gap:10px}
         /* 单按钮循环档位（合并三个模式，点击切换） */
-        .mode-tab{border:0;background:transparent;padding:5px 2px;border-radius:8px;font-size:.72rem;color:var(--color-textTertiary);cursor:pointer;font-family:inherit;transition:color .15s var(--ease-smooth)}
-        .mode-tab:hover{color:var(--color-textPrimary)}
-        .mode-tab.on{color:var(--mono-ink);font-weight:700}
         .welcome-state .dock{border-radius:24px}
         .dock:focus-within{box-shadow:var(--mono-shadow-composer-focus)}
         .composer-tool{width:38px;height:38px;border:0;border-radius:10px;background:transparent;cursor:pointer;color:var(--color-textTertiary);display:grid;place-items:center;flex:0 0 38px;transition:background .15s var(--ease-smooth),color .15s var(--ease-smooth)}
@@ -1423,6 +1508,23 @@ export default function Chat() {
         .pending-attachments>span{display:inline-flex;align-items:center;gap:5px;background:var(--mono-panel);border:1px solid var(--mono-hairline);border-radius:9999px;padding:4px 10px;font-size:.625rem;color:var(--color-textSecondary)}
         .pending-attachments button{display:grid;place-items:center;width:18px;height:18px;border:0;background:transparent;color:var(--color-textTertiary);cursor:pointer;border-radius:9999px}
         .pending-attachments button:hover{background:var(--mono-hover);color:var(--color-danger)}
+        .dock-profile-chip{display:inline-flex;align-items:center;gap:3px;background:var(--color-accentSoft);border-radius:9999px;padding:2px 8px 2px 6px;font-size:.55rem;font-weight:600;color:var(--color-textSecondary);white-space:nowrap;cursor:default;user-select:none;flex-shrink:0;max-width:140px;overflow:hidden;margin-left:6px}
+        .dock-profile-chip>span{overflow:hidden;text-overflow:ellipsis}
+        .dock-profile-chip button{display:grid;place-items:center;width:16px;height:16px;border:0;background:transparent;color:var(--color-textTertiary);cursor:pointer;border-radius:9999px;flex-shrink:0}
+        .dock-profile-chip button:hover{background:var(--mono-hover);color:var(--color-danger)}
+        .active-profile-chip{display:inline-flex;align-items:center;gap:6px;max-width:740px;margin:6px auto 0;background:var(--mono-panel);border:1px solid var(--mono-hairline);border-radius:9999px;padding:5px 12px;font-size:.65rem;color:var(--color-textSecondary);width:fit-content}
+        .active-profile-chip small{color:var(--color-textTertiary);font-size:.525rem}
+        .active-profile-chip button{display:grid;place-items:center;width:20px;height:20px;border:0;background:transparent;color:var(--color-textTertiary);cursor:pointer;border-radius:9999px;margin-left:2px}
+        .active-profile-chip button:hover{background:var(--mono-hover);color:var(--color-danger)}
+        .profile-pop{position:absolute;left:0;bottom:calc(100% + 10px);width:300px;background:var(--color-surface,#fff);border:1px solid var(--color-borderPrimary);border-radius:14px;box-shadow:var(--mono-shadow-composer);padding:14px;display:flex;flex-direction:column;gap:8px;text-align:left;z-index:40;animation:message-in .28s var(--ease-spring) both}
+        .profile-pop-title{font-size:.7rem;font-weight:700;color:var(--color-textPrimary);padding-left:2px}
+        .profile-pop-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:260px;overflow-y:auto}
+        .profile-pop-list>li>button{width:100%;border:0;background:transparent;border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:inherit;text-align:left;color:var(--color-textPrimary);transition:background .15s var(--ease-smooth)}
+        .profile-pop-list>li>button:hover{background:var(--mono-hover)}
+        .profile-pop-list>li>button.active{background:var(--color-accentSoft)}
+        .profile-pop-icon{display:grid;place-items:center;color:var(--color-textTertiary);flex-shrink:0}
+        .profile-pop-list strong{display:block;font-size:.7rem;font-weight:600;color:var(--color-textPrimary)}
+        .profile-pop-list small{display:block;font-size:.525rem;color:var(--color-textTertiary);margin-top:2px}
         .composer-note{max-width:740px;margin:14px auto 0;text-align:center;font-size:.525rem;color:var(--color-textTertiary);line-height:1.6;flex:0 0 auto}
 
         .rename-input{width:100%;border:1px solid var(--mono-hairline);border-radius:12px;padding:9px 12px;font-size:.8rem;margin-top:8px;outline:none;color:var(--color-textPrimary);background:var(--color-surface,#fff)}

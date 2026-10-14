@@ -303,7 +303,7 @@ export default function Profile() {
         .profile-layout{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:250px 1fr;gap:30px}
         .profile-list{display:flex;flex-direction:column;border-right:1px solid var(--color-borderLight);padding:0 22px 0 0}
         .profile-list>button{width:100%;border:0;border-bottom:1px solid var(--color-surfaceMuted);background:transparent;border-radius:8px;padding:11px;display:grid;grid-template-columns:38px 1fr auto;gap:9px;align-items:center;text-align:left;cursor:pointer;font-family:inherit}
-        .profile-list>button.active{background:var(--color-accentSoft);box-shadow:inset 3px 0 0 var(--color-primary)}
+        .profile-list>button.active{background:var(--color-accentSoft)}
         .profile-icon{width:38px;height:38px;border-radius:50%;background:var(--color-accentSoft);color:var(--color-accent);display:flex;align-items:center;justify-content:center}
         .profile-list strong{display:block;font-size:14px;color:var(--color-textPrimary)}
         .profile-list small{display:block;font-size:11px;color:var(--color-textTertiary);margin-top:3px}

@@ -68,11 +68,15 @@ export const chatAPI = {
   updateFeedback: (messageId: number, feedback: 'helpful' | 'unhelpful' | null) =>
     api.put(`/api/chat/messages/${messageId}/feedback`, { feedback }),
 
-  uploadAttachment: (conversationId: number, file: File, analysisFile?: Blob) => {
+  // 只传调用方缩好的图（Blob）：公网（CF 隧道）上行实测 ~72KB/s，原图 4.5MB 会拖到超时；
+  // 视觉模型读 analysis_path || storage_path，存缩图即可。Blob 无文件名，必须显式给。
+  uploadAttachment: (conversationId: number, image: Blob, filename: string) => {
     const body = new FormData()
-    body.append('file', file)
-    if (analysisFile) body.append('analysis_file', analysisFile, file.name)
-    return api.post(`/api/chat/conversations/${conversationId}/attachments`, body)
+    body.append('file', image, filename)
+    return api.post(`/api/chat/conversations/${conversationId}/attachments`, body, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000,
+    })
   },
 
   deleteAttachment: (id: number) => api.delete(`/api/attachments/${id}`),

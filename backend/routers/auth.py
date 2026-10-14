@@ -8,24 +8,45 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from core.database import get_db
 from schemas.user import UserCreate, UserResponse, Token, UserUpdate
+from schemas.registration_code import RegisterWithCodeRequest
 from services.auth import register_user, login_user, get_current_user
 from services.settings import get_setting
-from core.security import hash_password, password_strength_error
-# 滑块验证码与登录限流逻辑收敛在 captcha 路由模块，认证路由只消费结果
-from routers.captcha import check_login_rate_limit, consume_captcha_ticket
+from services.registration_code import register_with_code
+from core.security import hash_password, password_strength_error, create_access_token
+from services import turnstile
+from routers.captcha import check_login_rate_limit
 
 router = APIRouter(prefix="/api/auth", tags=["认证"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_403_FORBIDDEN)
-def register(user_data: UserCreate, db: Session = Depends(get_db)):
+@router.post("/register", response_model=Token)
+def register(
+    payload: RegisterWithCodeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     """
-    用户注册（已关闭）
+    用户注册（需注册码 + CF Turnstile）
+
+    注册成功后直接返回 JWT Token（前端拿到即登录，无需再跳登录页）
     """
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="注册功能已关闭，请联系管理员创建账号"
+    # CF Turnstile 验证
+    if turnstile.configured():
+        turnstile.verify_register(payload.captcha_token)
+
+    # 注册码校验 + 创建用户
+    new_user = register_with_code(
+        db,
+        username=payload.username,
+        password=payload.password,
+        confirm_password=payload.confirm_password,
+        registration_code=payload.registration_code,
+        nickname=payload.nickname,
     )
+
+    # 注册成功即登录：返回 Token
+    access_token = create_access_token(data={"sub": new_user.username})
+    return Token(access_token=access_token, token_type="bearer")
 
 
 @router.post("/token", response_model=Token)
@@ -42,7 +63,7 @@ def login(
         request: 请求对象（用于取客户端 IP 做登录限流）
         form_data: OAuth2 表单数据（包含 username 和 password）
         db: 数据库会话
-        captcha_token: 滑块验证码一次性票据（管理员开启 captcha_enabled 时必填）
+        captcha_token: CF Turnstile token（turnstile 已配置时必填）
 
     Returns:
         JWT Token
@@ -50,14 +71,11 @@ def login(
     # 入口先做 IP 限流：挡住高频爆破，再进入账号级锁定逻辑（login_user 内，保持不动）
     check_login_rate_limit(request)
 
-    # 滑块验证码：system_settings.captcha_enabled == "true" 时必须先通过验证拿一次性票据；
-    # 未开启时字段可空，行为与历史版本完全一致
-    if get_setting(db, "captcha_enabled") == "true":
-        if not consume_captcha_ticket(captcha_token):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="请先完成滑块验证",
-            )
+    # CF Turnstile 验证：环境变量配置了 site/secret key 时启用，前端登录页通过
+    # /api/public/settings.turnstile 拿 siteKey 渲染 widget；
+    # 未配置时字段可空，行为与无验证码完全一致
+    if turnstile.configured():
+        turnstile.verify_login(captcha_token)
 
     token = login_user(db, form_data.username, form_data.password)
     return token

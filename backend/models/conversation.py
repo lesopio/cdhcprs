@@ -22,6 +22,8 @@ class Conversation(Base):
     consultation_mode = Column(String(20), nullable=False, default="free")
     # AI 主动问诊（intake）模式下，记录已问轮次、已收集症状、是否收齐等状态
     intake_state_json = Column(Text, nullable=True)
+    # 该会话累计 token 用量（每条消息生成后追加）
+    tokens_used = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     

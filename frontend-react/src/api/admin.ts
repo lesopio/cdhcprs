@@ -41,6 +41,8 @@ export interface ConversationSummary {
   user_id: number
   is_active: boolean
   created_at: string
+  tokens_used?: number
+  username?: string | null
 }
 
 export interface ConversationMessage {
@@ -196,6 +198,18 @@ export interface BorrowKeyOption {
   borrow_llm_key?: boolean
 }
 
+/** 注册码条目 */
+export interface RegistrationCodeItem {
+  id: number
+  code: string
+  is_used: boolean
+  note: string | null
+  created_by: number | null
+  used_by: number | null
+  created_at: string
+  used_at: string | null
+}
+
 export const adminAPI = {
   createUser: (data: { username: string; password: string }) =>
     api.post<AdminUser>('/api/admin/users', data),
@@ -247,4 +261,14 @@ export const adminAPI = {
     api.put<ModelConfigItem>(`/api/admin/model-configs/${id}`, data),
   deleteModelConfig: (id: number) => api.delete<{ detail: string }>(`/api/admin/model-configs/${id}`),
   enableModelConfig: (id: number) => api.post<ModelConfigItem>(`/api/admin/model-configs/${id}/enable`),
+
+  // ===== 注册码管理 =====
+  createRegistrationCode: (note?: string) =>
+    api.post<RegistrationCodeItem[]>('/api/admin/registration-codes', { note }),
+  batchCreateRegistrationCodes: (count: number, note?: string) =>
+    api.post<RegistrationCodeItem[]>('/api/admin/registration-codes/batch', { count, note }),
+  getRegistrationCodes: () =>
+    api.get<RegistrationCodeItem[]>('/api/admin/registration-codes'),
+  deleteRegistrationCode: (id: number) =>
+    api.delete(`/api/admin/registration-codes/${id}`),
 }

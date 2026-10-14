@@ -54,6 +54,18 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/chat", tags=["对话"])
 
 
+def _add_tokens(db, conversation, user_id: int, n: int) -> None:
+    """同时累加每日用量和会话级 token 计数。"""
+    add_usage(db, user_id, "tokens", n)
+    if n > 0 and conversation is not None:
+        conversation.tokens_used = (conversation.tokens_used or 0) + n
+        db.commit()
+
+
+# 单次主动问诊的最大追问轮数（第 4 轮强制收齐出报告，与长辈模式上限对齐）
+INTAKE_MAX_ROUNDS = 4
+
+
 def sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
@@ -548,7 +560,7 @@ async def send_message(conversation_id: int, data: MessageCreate, current_user=D
                 analysis_summary=analysis_summary,
             )
             # token 事后计量：优先统计帧实际用量；两路 LLM 都没拿到 usage 时按字符估算（约 1.5 token/字）
-            add_usage(db, current_user.id, "tokens", usage_total["tokens"] or int(len(full_response) * 1.5))
+            _add_tokens(db, conversation, current_user.id, usage_total["tokens"] or int(len(full_response) * 1.5))
             if conversation.title in {"新问诊", "新对话", "自由问诊", "AI 主动问诊"} or conversation.title.startswith("患者-"):
                 try:
                     generated_title = await complete_llm(
@@ -561,8 +573,8 @@ async def send_message(conversation_id: int, data: MessageCreate, current_user=D
                     pass
             yield sse("done", {"message_id": assistant.id, "elapsed_ms": elapsed_ms(total_start)})
         except Exception as exc:
-            # 已流出的部分 token 同样计量（add_usage 内部吞错，不影响错误提示）
-            add_usage(db, current_user.id, "tokens", usage_total["tokens"] or int(len(full_response) * 1.5))
+            # 已流出的部分 token 同样计量（_add_tokens 内部吞错，不影响错误提示）
+            _add_tokens(db, conversation, current_user.id, usage_total["tokens"] or int(len(full_response) * 1.5))
             # HTTPException（如配额 429）取 detail 文案；普通异常取 str——
             # 避免把 {"detail":"..."} 的 JSON 序列化整个显示给用户
             exc_text = getattr(exc, "detail", None) or str(exc)
@@ -598,16 +610,17 @@ async def generate_intake(conversation, config, user_message_text, patient_conte
         )
         turns.append({"asked": user_message_text, "reply": turn.get("reply", ""), "options": turn.get("options", [])})
         state["rounds"] = rounds
-        state["complete"] = bool(turn.get("complete"))
+        # 单次主动问诊最多 4 题：第 4 轮无论模型是否说"收齐"都强制进入报告
+        state["complete"] = bool(turn.get("complete")) or rounds >= INTAKE_MAX_ROUNDS
         save_intake_state(conversation, state, db)
 
-        if not turn.get("complete"):
+        if not state["complete"]:
             # 追问轮：持久化一条 assistant 消息承载本轮回应文字（intake 状态已在 conversation 上保存）
             assistant = create_message(
                 db, conversation.id, "assistant", turn.get("reply", ""),
             )
             # token 事后计量（追问轮：按本轮回应长度估算兜底）
-            add_usage(db, conversation.user_id, "tokens", usage_total["tokens"] or int(len(turn.get("reply", "")) * 1.5))
+            _add_tokens(db, conversation, conversation.user_id, usage_total["tokens"] or int(len(turn.get("reply", "")) * 1.5))
             yield sse("intake.turn", {
                 "message_id": assistant.id,
                 "reply": turn.get("reply", ""),
@@ -704,8 +717,8 @@ async def generate_intake(conversation, config, user_message_text, patient_conte
             analysis_summary=evidence_summary,
         )
         # token 事后计量（收齐转报告轮：证据摘要/检索词未计量的小额调用由正文估算覆盖）
-        add_usage(db, conversation.user_id, "tokens", usage_total["tokens"] or int(len(full_response) * 1.5))
-        if conversation.title in {"新问诊", "新对话"} or conversation.title.startswith("患者-"):
+        _add_tokens(db, conversation, conversation.user_id, usage_total["tokens"] or int(len(full_response) * 1.5))
+        if conversation.title in {"新问诊", "新对话", "AI 主动问诊", "分诊问诊"} or conversation.title.startswith("患者-"):
             try:
                 generated_title = await complete_llm(
                     config, "你是会话标题生成器，只输出 8-24 字中文标题。", collected or user_message_text, 80,
@@ -717,9 +730,9 @@ async def generate_intake(conversation, config, user_message_text, patient_conte
                 pass
         yield sse("done", {"message_id": assistant.id, "elapsed_ms": elapsed_ms(total_start)})
     except Exception as exc:
-        # 已消耗的 token 同样计量（add_usage 内部吞错，不影响错误提示）
+        # 已消耗的 token 同样计量（_add_tokens 内部吞错，不影响错误提示）
         try:
-            add_usage(db, conversation.user_id, "tokens", usage_total["tokens"])
+            _add_tokens(db, conversation, conversation.user_id, usage_total["tokens"])
         except Exception:
             pass
         yield sse("error", {"message": f"问诊生成失败：{str(getattr(exc, 'detail', None) or exc)[:240]}"})

@@ -21,6 +21,7 @@ CONVERSATION_COLUMNS = {
     "triage_json": "TEXT",
     "consultation_mode": "VARCHAR(20) DEFAULT 'free' NOT NULL",
     "intake_state_json": "TEXT",
+    "tokens_used": "INTEGER DEFAULT 0 NOT NULL",
 }
 
 PATIENT_COLUMNS = {

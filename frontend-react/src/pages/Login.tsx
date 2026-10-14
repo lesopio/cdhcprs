@@ -7,19 +7,28 @@
  * 不套 AppShell（独立两栏布局）。颜色一律 var() 消费 tokens 槽位，规格关键值以
  * var(槽位, 规格hex) 兜底（同 shell.css 新问诊按钮先例），不新增硬编码品牌色。
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { gsap } from 'gsap'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import MaterialIcon from '@/components/MaterialIcon'
-import SliderCaptcha from '@/components/SliderCaptcha'
 import { notify } from '@/lib/toast'
 import { authAPI } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 import api from '@/api'
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: HTMLElement, options: Record<string, unknown>) => string
+      remove: (widgetId: string) => void
+      reset: (widgetId: string) => void
+    }
+  }
+}
 
 const DYNAMIC_WORDS = ['循证分诊', '连续档案', '可核验回答']
 const WORD_INTERVAL_MS = 2800
@@ -33,14 +42,13 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [websiteName, setWebsiteName] = useState(t('common.appName'))
   const [activeWord, setActiveWord] = useState(0)
-  // 滑块验证码：captchaEnabled 由 /api/public/settings.captcha_available 决定（管理端开关）；
-  // captchaToken 是验证通过后的一次性票据；epoch 用于登录失败后强制重挂组件重新验证（票据已消耗）
-  const [captchaEnabled, setCaptchaEnabled] = useState(false)
-  // 滑块弹窗制：点登录 → 弹出独立滑块弹窗 → 拖动到位（服务端签发哈希票据）自动续登
-  const [captchaOpen, setCaptchaOpen] = useState(false)
-  const [captchaEpoch, setCaptchaEpoch] = useState(0)
-  // 待验证的表单值（弹窗通过后用它真正发起登录）
-  const pendingRef = useRef<{ username: string; password: string } | null>(null)
+  // CF Turnstile：turnstileEnabled + siteKey 由 /api/public/settings 返回；
+  // turnstileToken 是 widget 验证通过后的 token（提交时带给后端 siteverify）
+  const [turnstileEnabled, setTurnstileEnabled] = useState(false)
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const turnstileWidgetId = useRef<string | null>(null)
+  const turnstileContainerRef = useRef<HTMLDivElement | null>(null)
   const ctxRef = useRef<gsap.Context | undefined>(undefined)
 
   const schema = z.object({
@@ -58,7 +66,7 @@ export default function Login() {
     defaultValues: { username: '', password: '' },
   })
 
-  /** 真正发起登录（滑块通过拿到一次性哈希票据后调用；未开验证码时直接进） */
+  /** 真正发起登录（turnstileToken 由 CF widget 回调填入；未启用时为空） */
   const doLogin = async (values: { username: string; password: string }, captchaToken?: string) => {
     setLoading(true)
     try {
@@ -67,7 +75,6 @@ export default function Login() {
       const { data: user } = await authAPI.getCurrentUser()
       userStore.setUser(user)
       notify.success('登录成功')
-      // 还原未登录前发起的问诊（Home 带 redirect/q/mode 过来），仅允许站内路径
       const redirect = searchParams.get('redirect') || '/chat'
       const safeRedirect = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/chat'
       const q = searchParams.get('q')
@@ -79,26 +86,55 @@ export default function Login() {
     } catch (error) {
       const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail
       notify.error(detail || '登录失败，请检查用户名和密码')
-      // 验证票据是一次性的（无论登录成败都作废）：清空并重挂滑块，让用户重新验证
-      if (captchaEnabled) {
-        setCaptchaOpen(false)
-        setCaptchaEpoch((e) => e + 1)
+      // 登录失败后重置 Turnstile widget（token 已消费/过期）
+      if (turnstileEnabled && turnstileWidgetId.current && window.turnstile) {
+        window.turnstile.reset(turnstileWidgetId.current)
+        setTurnstileToken('')
       }
     } finally {
       setLoading(false)
     }
   }
 
-  /** 表单提交入口：开启验证码时先弹滑块（通过后自动续登），未开启直接登录 */
+  /** 表单提交入口：Turnstile 已启用时必须先通过 widget 拿 token */
   const onSubmit = handleSubmit(async (values) => {
-    if (captchaEnabled) {
-      pendingRef.current = values
-      setCaptchaEpoch((e) => e + 1) // 每次打开弹窗都取新题（旧题/旧票据可能已过期或被消费）
-      setCaptchaOpen(true)
+    if (turnstileEnabled && !turnstileToken) {
+      notify.error('请先完成安全验证')
       return
     }
-    await doLogin(values)
+    await doLogin(values, turnstileToken || undefined)
   })
+
+  // 加载 CF Turnstile 脚本（只在需要时动态注入，避免无验证码环境白加载）
+  useEffect(() => {
+    if (!turnstileEnabled || !turnstileSiteKey) return
+    const existing = document.getElementById('cf-turnstile-script')
+    if (existing) { renderTurnstile(); return }
+    const script = document.createElement('script')
+    script.id = 'cf-turnstile-script'
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=__cfTsReady&render=explicit'
+    script.async = true
+    script.defer = true
+    ;(window as any).__cfTsReady = renderTurnstile
+    document.head.appendChild(script)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turnstileEnabled, turnstileSiteKey])
+
+  const renderTurnstile = useCallback(() => {
+    if (!turnstileContainerRef.current || !window.turnstile || !turnstileSiteKey) return
+    // 清掉旧 widget 再渲染（登录失败 reset 也走这条路）
+    if (turnstileWidgetId.current) {
+      try { window.turnstile.remove(turnstileWidgetId.current) } catch {}
+    }
+    turnstileWidgetId.current = window.turnstile.render(turnstileContainerRef.current, {
+      sitekey: turnstileSiteKey,
+      action: 'login',
+      callback: (token: string) => setTurnstileToken(token),
+      'expired-callback': () => setTurnstileToken(''),
+      'error-callback': () => setTurnstileToken(''),
+      theme: 'light',
+    })
+  }, [turnstileSiteKey])
 
   useEffect(() => {
     let cancelled = false
@@ -107,8 +143,11 @@ export default function Login() {
       .then(({ data }) => {
         if (cancelled) return
         if (data?.website_name) setWebsiteName(data.website_name)
-        // 管理端开启滑块验证码时登录页才渲染验证组件（拉取失败按未开启处理，与 website_name 同口径）
-        if (data?.captcha_available) setCaptchaEnabled(true)
+        // CF Turnstile：后端配置了 site/secret key 时启用
+        if (data?.turnstile_enabled && data?.turnstile_site_key) {
+          setTurnstileEnabled(true)
+          setTurnstileSiteKey(data.turnstile_site_key)
+        }
       })
       .catch(() => {})
     return () => {
@@ -205,7 +244,10 @@ export default function Login() {
               </div>
               {errors.password && <small>{errors.password.message}</small>}
             </label>
-            {/* 滑块验证码：挂在密码框与提交按钮之间；未通过时禁用提交（后端同样强校验，双保险） */}
+            {/* CF Turnstile widget：挂在密码框与提交按钮之间 */}
+            {turnstileEnabled && (
+              <div className="turnstile-wrap" ref={turnstileContainerRef} />
+            )}
 
             <button
               className="login-submit"
@@ -223,40 +265,11 @@ export default function Login() {
               {t('auth.login.submit')}
             </button>
           </form>
+          <p className="auth-switch">
+            还没有账号？<Link to="/register">注册</Link>
+          </p>
         </div>
       </section>
-
-      {/* 滑块验证独立弹窗：点登录后弹出，拖动到位（服务端签发一次性哈希票据）自动续登；
-          取消/失败关闭后需重新走验证（票据一次性，用后即焚） */}
-      {captchaOpen && (
-        <div
-          className="captcha-mask"
-          role="dialog"
-          aria-modal="true"
-          aria-label="安全验证"
-          onClick={(e) => { if (e.target === e.currentTarget) setCaptchaOpen(false) }}
-        >
-          <div className="captcha-modal">
-            <div className="captcha-modal-head">
-              <span className="captcha-modal-title">安全验证</span>
-              <button type="button" className="captcha-modal-close" aria-label="关闭" onClick={() => setCaptchaOpen(false)}>
-                ×
-              </button>
-            </div>
-            <p className="captcha-modal-hint">请按住滑块拖动到缺口位置，完成拼图验证</p>
-            <div className="captcha-scroll">
-              <SliderCaptcha
-                key={captchaEpoch}
-                onPass={(token) => {
-                  setCaptchaOpen(false)
-                  const pending = pendingRef.current
-                  if (pending) void doLogin(pending, token)
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       <style>{`
         /* 左栏 min 500→380：921-1000px 视口(含滚动条)两栏不再溢出；≥980 布局与断点均不变(1280 下 min 不参与分配，与现状逐像素一致) */
@@ -296,24 +309,13 @@ export default function Login() {
         .login-dots i:nth-child(3){animation-delay:.3s}
         @keyframes thinking-dot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
         @media(max-width:920px){.auth-page{grid-template-columns:1fr}.auth-intro{display:none}.auth-main{min-height:100%;padding:32px 20px}}
-        /* ≤480 手机：卡片 padding 收窄、卡片标题降一档(22→20)；弹窗内滑块解除组件自身 max-width:100% 压缩，
-           保持 320px 真实滑轨（组件 JS 按 320px 计算缺口/手柄），超宽由 .captcha-scroll 横向滚动兜底 */
-        @media(max-width:480px){.auth-card{padding:24px 16px}.card-head h2{font-size:20px}.captcha-modal .captcha-scroll .slider-captcha{max-width:none}}
+        /* ≤480 手机：卡片 padding 收窄、卡片标题降一档(22→20) */
+        @media(max-width:480px){.auth-card{padding:24px 16px}.card-head h2{font-size:20px}}
         @media(prefers-reduced-motion:reduce){.dynamic-word,.login-dots i{animation:none}}
-              /* 滑块验证独立弹窗：遮罩 + 居中卡片，mono 风格同登录页 */
-        .captcha-mask{position:fixed;inset:0;z-index:120;display:grid;place-items:center;background:color-mix(in srgb,var(--color-bgPrimary,#000) 45%,transparent);backdrop-filter:blur(3px)}
-        .captcha-modal{width:min(92vw,380px);background:var(--color-surface,#fff);border:1px solid var(--mono-hairline,#E5E5E5);border-radius:16px;box-shadow:var(--mono-shadow-composer,0 12px 34px rgba(0,0,0,.14));padding:18px 18px 22px}
-        .captcha-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-        .captcha-modal-title{font-size:15px;font-weight:700;color:var(--color-textPrimary)}
-        .captcha-modal-close{border:0;background:transparent;font-size:22px;line-height:1;color:var(--color-textTertiary);cursor:pointer;padding:2px 6px;border-radius:8px}
-        .captcha-modal-close:hover{background:var(--mono-hover,#F0F0F0);color:var(--color-textPrimary)}
-        .captcha-modal-hint{margin:0 0 12px;font-size:12.5px;color:var(--color-textTertiary)}
-        /* 手机适配：.captcha-scroll 容器宽 100%，内容超宽（视口 <~387px 时弹窗内容 <320px）横向滚动兜底；
-           滑块保持组件 320px 真实滑轨几何（后端按 320px 滑轨校验，容差 ±0.05），不压缩滑轨 */
-        .captcha-modal .captcha-scroll{max-width:100%;overflow-x:auto}
-        .captcha-modal .captcha-scroll .slider-captcha{margin:0 auto}
-        /* ≤979 触控宽度：关闭按钮可点区域扩到 44x44；负 margin 抵消尺寸增长，行高与视觉位置不变 */
-        @media(max-width:979px){.captcha-modal-close{min-width:44px;min-height:44px;box-sizing:border-box;padding:0;margin:-9px -9px;display:grid;place-items:center;position:relative;z-index:1}}
+        .turnstile-wrap{margin-bottom:16px;display:flex;justify-content:center}
+        .auth-switch{text-align:center;margin-top:18px;font-size:13.5px;color:var(--color-textTertiary)}
+        .auth-switch a{color:var(--color-foreground,#1B1B1B);font-weight:600;text-decoration:none;margin-left:4px}
+        .auth-switch a:hover{text-decoration:underline}
       `}</style>
     </div>
   )

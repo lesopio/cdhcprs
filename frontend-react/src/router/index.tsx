@@ -5,7 +5,9 @@ import AppSidebar from '@/components/shell/AppSidebar'
 import Topbar from '@/components/shell/Topbar'
 
 const Login = lazy(() => import('@/pages/Login'))
+const Register = lazy(() => import('@/pages/Register'))
 const Chat = lazy(() => import('@/pages/Chat'))
+const Triage = lazy(() => import('@/pages/Triage'))
 const SeniorChat = lazy(() => import('@/pages/SeniorChat'))
 const Profile = lazy(() => import('@/pages/Profile'))
 const Admin = lazy(() => import('@/pages/Admin'))
@@ -54,6 +56,7 @@ export function AppRoutes() {
     <Routes>
       {/* 登录页不套外壳 */}
       <Route path="/login" element={<Suspense fallback={<PageFallback />}><Login /></Suspense>} />
+      <Route path="/register" element={<Suspense fallback={<PageFallback />}><Register /></Suspense>} />
 
       {/* 管理平台：独立全屏页，不套侧栏外壳（用户需求） */}
       <Route path="/admin" element={<RequireAuth><RequireAdmin><Suspense fallback={<PageFallback />}><Admin /></Suspense></RequireAdmin></RequireAuth>} />
@@ -64,11 +67,12 @@ export function AppRoutes() {
         <Route path="/" element={<Navigate to="/chat" replace />} />
         <Route path="/about" element={<About />} />
         <Route path="/chat" element={<RequireAuth><Chat /></RequireAuth>} />
+        <Route path="/intake" element={<RequireAuth><Chat /></RequireAuth>} />
+        <Route path="/triage" element={<RequireAuth><Triage /></RequireAuth>} />
         <Route path="/senior" element={<RequireAuth><SeniorChat /></RequireAuth>} />
         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/records" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
-        <Route path="/register" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

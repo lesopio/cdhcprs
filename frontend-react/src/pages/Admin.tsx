@@ -23,7 +23,7 @@ import {
   adminAPI,
   type AdminUser, type ConversationSummary, type ConversationMessage,
   type AdminSettingsResponse, type AdminSettingsUpdatePayload,
-  type LLMModelOption, type ModelConfigItem,
+  type LLMModelOption, type ModelConfigItem, type RegistrationCodeItem,
 } from '@/api/admin'
 import api from '@/api'
 import { confirmDialog, notify } from '@/lib/toast'
@@ -42,7 +42,7 @@ interface AdminProfile {
   created_at?: string
 }
 
-type TabKey = 'profiles' | 'users' | 'conversations' | 'settings' | 'models'
+type TabKey = 'profiles' | 'users' | 'conversations' | 'settings' | 'models' | 'regcodes'
 
 const LLM_PROVIDERS = [
   { value: 'deepseek', label: 'DeepSeek' },
@@ -206,6 +206,12 @@ export default function Admin() {
   const [newPassword, setNewPassword] = useState('')
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('')
 
+  // 注册码管理
+  const [regCodes, setRegCodes] = useState<RegistrationCodeItem[]>([])
+  const [regCodeCreating, setRegCodeCreating] = useState(false)
+  const [regCodeNote, setRegCodeNote] = useState('')
+  const [regCodeCount, setRegCodeCount] = useState(1)
+
   // 用户每日额度编辑（用户管理 tab）：三输入框，留空=跟随全局、-1=不限、正整数=单人上限
   const [quotaEditorOpen, setQuotaEditorOpen] = useState(false)
   const [quotaSaving, setQuotaSaving] = useState(false)
@@ -282,9 +288,12 @@ export default function Admin() {
       if (data.llm_model_id) setModelOptions([{ id: data.llm_model_id, name: data.llm_model_name }])
     } catch { /* noop */ }
   }
+  const loadRegCodes = async () => {
+    try { const { data } = await adminAPI.getRegistrationCodes(); setRegCodes(data as RegistrationCodeItem[]) } catch { /* noop */ }
+  }
 
   useEffect(() => {
-    void Promise.all([loadUsers(), loadProfiles(), loadConversations(), loadSettings()])
+    void Promise.all([loadUsers(), loadProfiles(), loadConversations(), loadSettings(), loadRegCodes()])
   }, [])
 
   // 全站档案表列（归属用户名由 users 列表映射）
@@ -386,7 +395,9 @@ export default function Admin() {
   const convColumns = useMemo<ColumnDef<ConversationSummary>[]>(() => [
     { accessorKey: 'id', header: () => 'ID', size: 70 },
     { accessorKey: 'title', header: () => '会话标题' },
-    { accessorKey: 'user_id', header: () => '用户 ID', size: 110 },
+    { id: 'username', header: () => '用户名', size: 120, cell: ({ row }) => row.original.username || `#${row.original.user_id}` },
+    { accessorKey: 'user_id', header: () => '用户 ID', size: 90 },
+    { accessorKey: 'tokens_used', header: () => 'Token', size: 100, cell: ({ row }) => (row.original.tokens_used ?? 0).toLocaleString() },
     {
       id: 'status', header: () => '状态',
       cell: ({ row }) => (
@@ -852,6 +863,7 @@ export default function Admin() {
           <TabsTrigger value="conversations"><MaterialIcon name="forum" size={16} />会话管理</TabsTrigger>
           <TabsTrigger value="settings"><MaterialIcon name="settings" size={16} />系统设置</TabsTrigger>
           <TabsTrigger value="models"><MaterialIcon name="smart_toy" size={16} />模型设置</TabsTrigger>
+          <TabsTrigger value="regcodes"><MaterialIcon name="confirmation_number" size={16} />注册码管理</TabsTrigger>
         </TabsList>
 
         {/* ===== 全站档案管理 ===== */}
@@ -1396,6 +1408,125 @@ export default function Admin() {
             <section className="panel"><div className="empty-row">设置加载中…</div></section>
           )}
         </TabsContent>
+
+        {/* ===== 注册码管理 ===== */}
+        <TabsContent value="regcodes">
+          <section className="panel">
+            <div className="panel-head">
+              <h2>注册码管理</h2>
+              <button type="button" className="mini-btn" onClick={loadRegCodes}>
+                <MaterialIcon name="refresh" size={16} />刷新
+              </button>
+            </div>
+
+            {/* 生成注册码 */}
+            <div className="regcode-create-bar">
+              <input
+                type="text"
+                className="regcode-note-input"
+                placeholder="备注（可选）"
+                value={regCodeNote}
+                onChange={(e) => setRegCodeNote(e.target.value)}
+              />
+              <select
+                className="regcode-count-select"
+                value={regCodeCount}
+                onChange={(e) => setRegCodeCount(Number(e.target.value))}
+              >
+                <option value={1}>生成 1 个</option>
+                <option value={5}>生成 5 个</option>
+                <option value={10}>生成 10 个</option>
+                <option value={20}>生成 20 个</option>
+                <option value={50}>生成 50 个</option>
+              </select>
+              <button
+                type="button"
+                className="primary-btn"
+                disabled={regCodeCreating}
+                onClick={async () => {
+                  setRegCodeCreating(true)
+                  try {
+                    if (regCodeCount > 1) {
+                      await adminAPI.batchCreateRegistrationCodes(regCodeCount, regCodeNote || undefined)
+                    } else {
+                      await adminAPI.createRegistrationCode(regCodeNote || undefined)
+                    }
+                    setRegCodeNote('')
+                    await loadRegCodes()
+                    notify.success(`已生成 ${regCodeCount} 个注册码`)
+                  } catch (error) {
+                    const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+                    notify.error(detail || '生成注册码失败')
+                  } finally {
+                    setRegCodeCreating(false)
+                  }
+                }}
+              >
+                {regCodeCreating ? '生成中…' : '生成注册码'}
+              </button>
+            </div>
+
+            {/* 注册码列表 */}
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 220 }}>注册码</th>
+                    <th style={{ width: 80 }}>状态</th>
+                    <th>备注</th>
+                    <th style={{ width: 160 }}>创建时间</th>
+                    <th style={{ width: 160 }}>使用时间</th>
+                    <th style={{ width: 60 }}>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {regCodes.length === 0 && (
+                    <tr><td colSpan={6} className="empty-row">暂无注册码</td></tr>
+                  )}
+                  {regCodes.map((rc) => (
+                    <tr key={rc.id}>
+                      <td>
+                        <span className="regcode-value" title="点击复制" style={{ cursor: 'pointer' }} onClick={() => { navigator.clipboard?.writeText(rc.code).then(() => notify.success('已复制到剪贴板')).catch(() => {}) }}>
+                          {rc.code}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`regcode-badge ${rc.is_used ? 'used' : 'unused'}`}>
+                          {rc.is_used ? '已使用' : '可用'}
+                        </span>
+                      </td>
+                      <td className="cell-muted">{rc.note || '—'}</td>
+                      <td className="cell-muted">{formatDateTime(rc.created_at)}</td>
+                      <td className="cell-muted">{rc.used_at ? formatDateTime(rc.used_at) : '—'}</td>
+                      <td>
+                        {!rc.is_used && (
+                          <button
+                            type="button"
+                            className="danger-text-btn"
+                            onClick={async () => {
+                              const ok = await confirmDialog(`确定删除注册码 ${rc.code}？`)
+                              if (!ok) return
+                              try {
+                                await adminAPI.deleteRegistrationCode(rc.id)
+                                await loadRegCodes()
+                                notify.success('注册码已删除')
+                              } catch (error) {
+                                const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+                                notify.error(detail || '删除失败')
+                              }
+                            }}
+                          >
+                            删除
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </TabsContent>
       </Tabs>
 
       {/* 会话消息查看对话框 */}
@@ -1679,6 +1810,22 @@ export default function Admin() {
           /* 模型配置头部：状态标签与启用按钮不逐字换行，配置名占剩余宽度换行 */
           .models-config-head .tag,.models-config-head .models-enable-btn{white-space:nowrap;flex:0 0 auto}
         }
+        /* 注册码管理 */
+        .regcode-create-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+        .regcode-note-input{flex:1;min-width:180px;height:38px;border:1px solid var(--color-borderPrimary,#E5E5E5);border-radius:8px;padding:0 12px;font-size:13px;background:var(--color-surface,#fff);outline:none}
+        .regcode-note-input:focus{border-color:var(--color-foreground,#1B1B1B)}
+        .regcode-count-select{height:38px;border:1px solid var(--color-borderPrimary,#E5E5E5);border-radius:8px;padding:0 8px;font-size:13px;background:var(--color-surface,#fff);cursor:pointer}
+        .primary-btn{height:38px;padding:0 18px;border:0;border-radius:8px;background:var(--color-foreground,#1B1B1B);color:var(--color-background,#FAFAFA);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+        .primary-btn:hover{background:var(--color-accentHover,#3D3D3A)}
+        .primary-btn:disabled{opacity:.5;cursor:not-allowed}
+        .regcode-value{font-family:monospace;font-size:13px;font-weight:600;color:var(--color-textPrimary,#1B1B1B);user-select:all}
+        .regcode-value:hover{opacity:.7}
+        .regcode-badge{display:inline-block;padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:600}
+        .regcode-badge.unused{background:#e8f5e9;color:#2e7d32}
+        .regcode-badge.used{background:#fbe9e7;color:#c62828}
+        .cell-muted{color:var(--color-textTertiary,#8F8F8F);font-size:12.5px}
+        .danger-text-btn{border:0;background:transparent;color:var(--color-danger,#e53e3e);cursor:pointer;font-size:12.5px;font-family:inherit;padding:4px 8px;border-radius:6px}
+        .danger-text-btn:hover{background:rgba(229,62,62,.08)}
       `}</style>
     </div>
   )

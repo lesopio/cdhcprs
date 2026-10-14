@@ -30,7 +30,7 @@ import { notify } from '@/lib/toast'
 import { useSettingsStore, type FontSizeMode } from '@/stores/settings'
 
 /** 问满轮数：问满即自动生成报告 */
-const MAX_QUESTIONS = 6
+const MAX_QUESTIONS = 4
 
 type Phase = 'entry' | 'thinking' | 'asking' | 'reporting' | 'report' | 'history'
 
@@ -65,6 +65,18 @@ interface SeniorError {
   message: string
 }
 
+/** 过往问诊日期：后端给的是无偏移 UTC 字符串，直接 slice(0,10) 在 UTC+8 晚间会差一天；
+ *  补 Z 解析后取本地日期 */
+function seniorSessionDate(value?: string): string {
+  if (!value) return ''
+  const text = value.includes('T') && !/Z$/i.test(value) && !/[+-]\d{2}:?\d{2}$/.test(value)
+    ? value.replace(/\.\d+/, '') + 'Z'
+    : value
+  const d = new Date(text)
+  if (isNaN(d.getTime())) return value.slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 /** /api/public/settings 的能力开关（与 Chat.tsx 的 Capabilities 同源字段） */
 interface SeniorCapabilities {
   asr_available: boolean
@@ -87,13 +99,38 @@ interface PendingImage {
   dataUrl: string
 }
 
-/** File → data URL（base64 直传后端，不经会话附件接口） */
+/** File → 缩图 data URL（base64 直传后端，不经会话附件接口）。
+ * 公网上行实测仅 ~72KB/s：原图 4.5MB 转 base64 就是 6MB 请求体，发送必然拖死；
+ * 先压到 ≤2048px JPEG（约 0.5MB）再转 base64。视觉模型拿到的就是这张缩图。 */
 const fileToDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(reader.error ?? new Error('read failed'))
-    reader.readAsDataURL(file)
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      const maxDim = 2048
+      let { width, height } = img
+      if (width > maxDim || height > maxDim) {
+        const scale = maxDim / Math.max(width, height)
+        width = Math.round(width * scale)
+        height = Math.round(height * scale)
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      URL.revokeObjectURL(url)
+      if (!ctx) {
+        reject(new Error('canvas unavailable'))
+        return
+      }
+      ctx.drawImage(img, 0, 0, width, height)
+      resolve(canvas.toDataURL('image/jpeg', 0.9))
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('decode failed'))
+    }
+    img.src = url
   })
 
 /** 问题卡口播文本：问题 + 选项 + 科普（长辈不用逐字看） */
@@ -507,9 +544,10 @@ export default function SeniorChat() {
 
   /** 「+」选图：校验类型/大小/剩余张数 → data URL → 待发 chip（同问诊页小窗交互） */
   const onImagesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files
+    // input.files 是活引用：清 value 会连带清空它，必须先快照再清（否则静默无响应）
+    const fileList = e.target.files ? Array.from(e.target.files) : []
     if (imageInputRef.current) imageInputRef.current.value = ''
-    if (!fileList || !fileList.length) return
+    if (!fileList.length) return
     const room = capabilities.vl_max_images - pendingImages.length
     if (room <= 0) {
       notify.info(`一次最多带 ${capabilities.vl_max_images} 张图片`)
@@ -517,7 +555,7 @@ export default function SeniorChat() {
     }
     const picked: PendingImage[] = []
     let overflowNotified = false
-    for (const file of Array.from(fileList)) {
+    for (const file of fileList) {
       if (picked.length >= room) {
         if (!overflowNotified) {
           notify.info(`一次最多带 ${capabilities.vl_max_images} 张图片，多余的没有选上`)
@@ -529,10 +567,8 @@ export default function SeniorChat() {
         notify.error('只能选择 JPEG、PNG 或 WebP 图片')
         continue
       }
-      if (file.size > capabilities.vl_max_image_mb * 1024 * 1024) {
-        notify.error(`${file.name} 超过 ${capabilities.vl_max_image_mb}MB 限制`)
-        continue
-      }
+      // 原图体积不再拦截：fileToDataUrl 会先缩到 ≤2048px JPEG（约 0.5MB），
+      // 大照片也能用；后端 _decode_images 仍按 vl_max_image_mb 兜底校验缩图
       try {
         picked.push({ name: file.name, dataUrl: await fileToDataUrl(file) })
       } catch {
@@ -633,6 +669,13 @@ export default function SeniorChat() {
                   rows={2}
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Enter 直接发送（Shift+Enter 换行），长辈用户常忽略按钮
+                    if (e.key === 'Enter' && !e.shiftKey && draft.trim()) {
+                      e.preventDefault()
+                      void submitChief()
+                    }
+                  }}
                 />
                 <div className="senior-dock-foot">
                   {addPhotoButton}
@@ -665,7 +708,7 @@ export default function SeniorChat() {
                     {pastSessions.map((s) => (
                       <button key={s.id} type="button" className="senior-past-item" onClick={() => void openHistorySession(s.id)}>
                         <span className="senior-past-name">{s.title}</span>
-                        <span className="senior-past-date">{s.created_at ? s.created_at.slice(0, 10) : ''}</span>
+                        <span className="senior-past-date">{seniorSessionDate(s.created_at)}</span>
                       </button>
                     ))}
                   </div>
@@ -938,6 +981,19 @@ export default function SeniorChat() {
 
       <style>{`
         .senior-view{height:100%;display:flex;flex-direction:column;background:var(--color-bgPrimary)}
+        /* 中性单色语义槽（与 Chat.tsx .chat-workbench 同一套）：本页是独立路由，
+           不在 .chat-workbench 内，必须在此声明，否则发送键背景等取不到值会渲染成透明 */
+        .senior-view{
+          --mono-ink:var(--color-primary);
+          --mono-ink-hover:var(--color-accentHover);
+          --mono-hover:var(--color-primarySoft);
+          --mono-panel:var(--color-bgSecondary);
+          --mono-hairline:var(--color-borderPrimary);
+          --mono-shadow-composer:var(--shadow-composer);
+          --mono-shadow-composer-focus:var(--shadow-composer-focus);
+          --ease-spring:cubic-bezier(0.22,1,0.36,1);
+          --ease-smooth:cubic-bezier(0.4,0,0.2,1);
+        }
         /* 顶栏已移除（模式切换走侧栏），内容区全屏解放 */
         .senior-main{flex:1;min-height:0;overflow-y:auto}
         .senior-column{display:flex;flex-direction:column;min-height:100%;max-width:680px;margin:0 auto;padding:40px 20px 64px}

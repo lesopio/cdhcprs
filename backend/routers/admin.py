@@ -20,6 +20,16 @@ from schemas.settings import (
     LogoUploadResponse,
 )
 from schemas.user import UserCreate, UserResponse, UserUpdate
+from schemas.registration_code import (
+    RegistrationCodeBatchCreate,
+    RegistrationCodeCreate,
+    RegistrationCodeResponse,
+)
+from services.registration_code import (
+    create_code,
+    delete_code,
+    get_all_codes,
+)
 from services.admin import (
     delete_conversation_by_admin,
     delete_user,
@@ -247,7 +257,18 @@ def get_conversations(
     """
 
     conversations = get_all_conversations(db)
-    return conversations
+    # 批量查用户名（避免 N+1）
+    user_ids = {c.user_id for c in conversations}
+    user_map: Dict[int, str] = {}
+    if user_ids:
+        users = db.query(User).filter(User.id.in_(user_ids)).all()
+        user_map = {u.id: u.username for u in users}
+    result = []
+    for c in conversations:
+        item = ConversationResponse.model_validate(c)
+        item.username = user_map.get(c.user_id)
+        result.append(item)
+    return result
 
 
 @router.get("/conversations/{conversation_id}/messages", response_model=List[MessageResponse])
@@ -366,3 +387,50 @@ async def upload_logo(
     update_setting(db, "website_logo", data_url)
 
     return LogoUploadResponse(logo_url=data_url)
+
+
+# ========== 注册码管理 ==========
+
+@router.post("/registration-codes", response_model=List[RegistrationCodeResponse], status_code=status.HTTP_201_CREATED)
+def create_registration_codes(
+    body: RegistrationCodeCreate,
+    current_admin=Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """管理员生成一条注册码"""
+    reg = create_code(db, created_by=current_admin.id, note=body.note)
+    return [reg]
+
+
+@router.post("/registration-codes/batch", response_model=List[RegistrationCodeResponse], status_code=status.HTTP_201_CREATED)
+def create_registration_codes_batch(
+    body: RegistrationCodeBatchCreate,
+    current_admin=Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """管理员批量生成注册码"""
+    codes = []
+    for _ in range(body.count):
+        reg = create_code(db, created_by=current_admin.id, note=body.note)
+        codes.append(reg)
+    return codes
+
+
+@router.get("/registration-codes", response_model=List[RegistrationCodeResponse])
+def list_registration_codes(
+    current_admin=Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """获取全部注册码列表"""
+    return get_all_codes(db)
+
+
+@router.delete("/registration-codes/{code_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_registration_code(
+    code_id: int,
+    current_admin=Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """删除未使用的注册码"""
+    delete_code(db, code_id)
+    return None

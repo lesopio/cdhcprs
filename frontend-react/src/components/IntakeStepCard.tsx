@@ -38,6 +38,7 @@ export default function IntakeStepCard({ questions, answers, submitting, onAnswe
     index: 0,
     set: new Set(),
   }))
+  const [customText, setCustomText] = useState('')
   const bodyRef = useRef<HTMLDivElement | null>(null)
   // 上一次展示的题号：用于推断切换方向（前进从右滑入、后退从左滑入）
   const prevIndexRef = useRef<number | null>(null)
@@ -49,8 +50,9 @@ export default function IntakeStepCard({ questions, answers, submitting, onAnswe
   const selections = index < answers.length ? answers[index] : undefined
   const answered = (selections?.length ?? 0) > 0
   const isLast = index === total - 1
-  // 与 IntakeOptions 同语义：存在 multi=true 即多选场景，否则全部视为单选
-  const isMulti = question?.options.some((option) => option.multi) ?? false
+  // 主动问诊选项一律多选（用户需求：症状往往并发，患者可勾选多项后统一提交）；
+  // 后端 multi 标志仍保留在数据结构里但不再驱动交互
+  const isMulti = true
   const pendingSet = pending.index === index ? pending.set : EMPTY_SELECTION
   // 只有最后一问未作答时可作答；submitting 期间一并锁死
   const interactive = isLast && !answered && !submitting
@@ -113,6 +115,14 @@ export default function IntakeStepCard({ questions, answers, submitting, onAnswe
     onAnswer(index, Array.from(pendingSet))
   }
 
+  // 自由文本提交：用户不想选选项时可自行输入症状描述
+  const submitCustomText = () => {
+    const text = customText.trim()
+    if (!interactive || !text) return
+    onAnswer(index, [text])
+    setCustomText('')
+  }
+
   const answeredCount = answers.reduce((count, item) => (item.length > 0 ? count + 1 : count), 0)
 
   if (!question) return null
@@ -122,7 +132,7 @@ export default function IntakeStepCard({ questions, answers, submitting, onAnswe
       {/* 卡头：标题 + 进度文字 + 圆点指示（圆点纯装饰，信息由文字与 aria-label 承载） */}
       <header className="isc-head">
         <div className="isc-title">
-          <MaterialIcon name="smart_toy" size={20} />
+          <MaterialIcon name="stethoscope" size={20} />
           <h3>AI 主动问诊</h3>
         </div>
         <div
@@ -199,6 +209,30 @@ export default function IntakeStepCard({ questions, answers, submitting, onAnswe
                 </button>
               </div>
             )}
+            {/* 自由输入：允许用户跳过选项自行描述症状 */}
+            {interactive && (
+              <div className="isc-custom">
+                <input
+                  type="text"
+                  className="isc-custom-input"
+                  placeholder="或自行输入症状描述…"
+                  value={customText}
+                  disabled={!interactive}
+                  onChange={(e) => setCustomText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); submitCustomText() }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="isc-custom-btn"
+                  disabled={!interactive || !customText.trim()}
+                  onClick={submitCustomText}
+                >
+                  <MaterialIcon name="send" size={16} />
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -260,6 +294,13 @@ export default function IntakeStepCard({ questions, answers, submitting, onAnswe
         .isc-option:disabled{cursor:not-allowed;opacity:.72}
         .isc-option-text{flex:1;min-width:0;font-size:14px;line-height:1.5}
         .isc-actions{margin-top:14px;display:flex;justify-content:flex-end}
+        .isc-custom{display:flex;gap:8px;margin-top:12px;align-items:center}
+        .isc-custom-input{flex:1;min-width:0;height:40px;border:1px solid var(--isc-hairline);border-radius:10px;padding:0 12px;font:inherit;font-size:13px;color:var(--color-textPrimary);background:var(--color-surface,#fff);outline:none;transition:border-color 160ms var(--isc-ease)}
+        .isc-custom-input:focus{border-color:var(--isc-ink)}
+        .isc-custom-input::placeholder{color:var(--color-textTertiary)}
+        .isc-custom-btn{flex-shrink:0;width:40px;height:40px;border:0;border-radius:10px;background:var(--isc-ink);color:var(--color-bgPrimary);display:grid;place-items:center;cursor:pointer;transition:background 160ms var(--isc-ease)}
+        .isc-custom-btn:hover:not(:disabled){background:var(--isc-ink-hover)}
+        .isc-custom-btn:disabled{background:var(--isc-hairline);color:var(--color-textTertiary);cursor:not-allowed}
         .isc-submit{border:0;border-radius:12px;background:var(--isc-ink);color:var(--color-bgPrimary);padding:10px 18px;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-weight:600;transition:background 160ms var(--isc-ease)}
         .isc-submit:hover:not(:disabled){background:var(--isc-ink-hover)}
         .isc-submit:disabled{background:var(--isc-hairline);color:var(--color-textTertiary);cursor:not-allowed}

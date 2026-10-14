@@ -28,6 +28,7 @@ interface RecentConv {
   title?: string
   created_at?: string
   updated_at?: string
+  consultation_mode?: string
 }
 
 function BrandMark({ alt }: { alt: string }) {
@@ -83,6 +84,16 @@ export default function AppSidebar({ sidebarCollapsed = false, onToggleSidebar }
   const navigate = useNavigate()
   const location = useLocation()
 
+  // 按当前路由决定「新问诊」按钮的目标与文案
+  const newPathByRoute: Record<string, { link: string; label: string }> = {
+    '/senior': { link: '/senior?new=1', label: '新问诊' },
+    '/intake': { link: '/intake?new=1', label: '新问诊' },
+    '/triage': { link: '/triage', label: '新分诊' },
+  }
+  const newConvRoute = newPathByRoute[location.pathname] || { link: '/chat?new=1', label: '新问诊' }
+  const newConvLink = newConvRoute.link
+  const newConvLabel = newConvRoute.label
+
   useEffect(() => {
     let cancelled = false
     api.get('/api/public/settings')
@@ -113,9 +124,16 @@ export default function AppSidebar({ sidebarCollapsed = false, onToggleSidebar }
     try {
       const { data } = await chatAPI.getConversations()
       const list: any[] = Array.isArray(data) ? data : (data?.items ?? [])
-      // 历史分离按页面区分：长辈模式页只显示 senior 会话，普通页面只显示普通会话
-      const onSenior = location.pathname.startsWith('/senior')
-      const filtered = list.filter((c) => (onSenior ? c.consultation_mode === 'senior' : c.consultation_mode !== 'senior'))
+      // 历史按页面路由与 consultation_mode 四路分离：
+      // /chat → free, /intake → intake, /triage → guided, /senior → senior
+      const path = location.pathname
+      const modeForRoute: Record<string, string> = {
+        '/senior': 'senior',
+        '/intake': 'intake',
+        '/triage': 'guided',
+      }
+      const targetMode = modeForRoute[path] || 'free'
+      const filtered = list.filter((c) => (c.consultation_mode || 'free') === targetMode)
       setRecents(filtered.slice(0, 12))
     } catch {
       setRecents([])
@@ -206,13 +224,19 @@ export default function AppSidebar({ sidebarCollapsed = false, onToggleSidebar }
     try {
       await chatAPI.deleteConversation(conv.id)
       /* 删除的是当前打开的会话 → 回到新问诊（Chat 的 ?new=1 路由 watcher 负责重置） */
-      if (currentConvId === String(conv.id)) navigate('/chat?new=1')
+      if (currentConvId === String(conv.id)) navigate(newConvLink)
       await loadRecent()
       notify.success('会话已删除')
     } catch { /* 拦截器已提示 */ }
   }
 
   /* 会话行：标题 Link + hover 显现的改名/删除钮（桌面侧栏与移动端抽屉共用） */
+  const convLinkBase = (c: RecentConv) => {
+    // 按会话模式决定跳转路由：senior → /senior，intake → /intake，guided → /chat，其余 → /chat
+    const mode = c.consultation_mode || 'free'
+    const base = mode === 'senior' ? '/senior' : mode === 'intake' ? '/intake' : '/chat'
+    return `${base}?c=${c.id}`
+  }
   const renderRecentRow = (c: RecentConv, onClose?: () => void) => (
     <div key={c.id} className={`recent-row${renamingId === c.id ? ' editing' : ''}`}>
       {renamingId === c.id ? (
@@ -231,7 +255,7 @@ export default function AppSidebar({ sidebarCollapsed = false, onToggleSidebar }
         />
       ) : (
         <Link
-          to={`/chat?c=${c.id}`}
+          to={convLinkBase(c)}
           className={recentClass(c.id)}
           style={{ padding: '10px 12.5px', borderRadius: 10 }}
           onClick={onClose}
@@ -269,12 +293,13 @@ export default function AppSidebar({ sidebarCollapsed = false, onToggleSidebar }
           )}
         </div>
 
+        {/* 新问诊按钮：按当前路由决定目标（各模式各自的新会话） */}
         {isAuthenticated && (
-          <Link to="/chat?new=1" className="side-btn new-btn" style={NEW_BTN} onClick={() => setMenuOpen(false)}>
+          <Link to={newConvLink} className="side-btn new-btn" style={NEW_BTN} onClick={() => setMenuOpen(false)}>
             <span className="side-icon" style={SIDE_ICON}>
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>
             </span>
-            新问诊
+            {newConvLabel}
           </Link>
         )}
 
@@ -284,6 +309,26 @@ export default function AppSidebar({ sidebarCollapsed = false, onToggleSidebar }
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M5 18.5h9.5a4.5 4.5 0 0 0 0-9H8A4 4 0 0 0 4 13.5V21l3.1-2.5" stroke="currentColor" strokeWidth="1.55" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </span>
             问诊
+          </NavLink>
+        )}
+
+        {/* AI 主动问诊：独立页 /intake，最多 4 题，由 Chat 承载 intake 模式 */}
+        {isAuthenticated && (
+          <NavLink to="/intake" className={sideBtnClass} style={SIDE_BTN}>
+            <span className="side-icon" style={SIDE_ICON}>
+              <MaterialIcon name="quiz" size={19} />
+            </span>
+            主动问诊
+          </NavLink>
+        )}
+
+        {/* 手动分诊：独立页 /triage，依据国标逐级分类→疾病→辨证→主诉 */}
+        {isAuthenticated && (
+          <NavLink to="/triage" className={sideBtnClass} style={SIDE_BTN}>
+            <span className="side-icon" style={SIDE_ICON}>
+              <MaterialIcon name="assignment" size={19} />
+            </span>
+            手动分诊
           </NavLink>
         )}
 
@@ -409,11 +454,11 @@ export default function AppSidebar({ sidebarCollapsed = false, onToggleSidebar }
             <div className="brand" style={{ height: 56.5, gap: 11.5, padding: '0 12.5px 6.5px', fontSize: 21.5 }}><BrandMark alt={siteName} />{siteName}</div>
 
             {isAuthenticated && (
-              <Link to="/chat?new=1" className="side-btn new-btn" style={NEW_BTN} onClick={() => setMobileNavOpen(false)}>
+              <Link to={newConvLink} className="side-btn new-btn" style={NEW_BTN} onClick={() => setMobileNavOpen(false)}>
                 <span className="side-icon" style={SIDE_ICON}>
                   <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>
                 </span>
-                新问诊
+                {newConvLabel}
               </Link>
             )}
 
@@ -423,6 +468,24 @@ export default function AppSidebar({ sidebarCollapsed = false, onToggleSidebar }
                   <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M5 18.5h9.5a4.5 4.5 0 0 0 0-9H8A4 4 0 0 0 4 13.5V21l3.1-2.5" stroke="currentColor" strokeWidth="1.55" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </span>
                 问诊
+              </NavLink>
+            )}
+
+            {isAuthenticated && (
+              <NavLink to="/intake" className={sideBtnClass} style={SIDE_BTN} onClick={() => setMobileNavOpen(false)}>
+                <span className="side-icon" style={SIDE_ICON}>
+                  <MaterialIcon name="quiz" size={19} />
+                </span>
+                主动问诊
+              </NavLink>
+            )}
+
+            {isAuthenticated && (
+              <NavLink to="/triage" className={sideBtnClass} style={SIDE_BTN} onClick={() => setMobileNavOpen(false)}>
+                <span className="side-icon" style={SIDE_ICON}>
+                  <MaterialIcon name="assignment" size={19} />
+                </span>
+                手动分诊
               </NavLink>
             )}
 

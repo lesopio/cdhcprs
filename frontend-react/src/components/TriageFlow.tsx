@@ -232,6 +232,15 @@ export default function TriageFlow({ profiles, initialProfileId = 0, onSubmit, o
         }
       }
     }, rootRef)
+    // 步骤前进/后退后把新展开的卡滚进视口：分诊页内容常超一屏，
+    // 不滚的话新题/「下一步」按钮在折叠线下，用户以为点击无响应
+    const target = cardRefs.current[step]
+    if (target) {
+      const t = window.setTimeout(() => {
+        target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' })
+      }, 80)
+      return () => { ctx.revert(); window.clearTimeout(t) }
+    }
     return () => ctx.revert()
   }, [step])
 

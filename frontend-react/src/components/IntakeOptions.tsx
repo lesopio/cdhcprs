@@ -1,9 +1,8 @@
 /**
  * AI 主动问诊的选择题气泡（迁移自 Vue IntakeOptions.vue）
  *
- * 行为：
- * - 单选场景（任一选项 multi=false）：点一项立即回传
- * - 多选场景（全部 multi=true）：勾选 + 提交按钮回传
+ * 行为（用户需求：选项一律多选）：
+ * - 勾选多项 + 提交按钮统一回传；后端 multi 标志保留在数据里但不再驱动交互
  */
 import { useEffect, useState } from 'react'
 import MaterialIcon from '@/components/MaterialIcon'
@@ -33,17 +32,12 @@ export default function IntakeOptions({
     setSubmittedSelections([])
   }, [options])
 
-  const anyMulti = options.some((o) => o.multi)
+  // 主动问诊选项一律多选（用户需求）：勾选 + 提交统一回传
+  const anyMulti = true
   const selectedLabels = Array.from(selected)
 
   const toggleOption = (option: IntakeOption) => {
     const label = option.label
-    if (!anyMulti) {
-      setSelected(new Set([label]))
-      setSubmittedSelections([label])
-      onSubmit([label])
-      return
-    }
     setSelected((prev) => {
       const next = new Set(prev)
       next.has(label) ? next.delete(label) : next.add(label)

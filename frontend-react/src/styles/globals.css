@@ -217,9 +217,11 @@ body {
  * p/strong 覆盖（特异性更高）仍生效。颜色全部走 tokens.css 的 --color-* 变量，
  * 四主题（graphite/paper/spring/night）自动跟随。
  * ========================================================================= */
-.markdown-body{font-size:14px;line-height:1.85;color:var(--color-textSecondary);overflow-wrap:anywhere}
+/* 字号一律 rem（除 root 字号 20px 外的 px 不会跟随大字/特大字模式缩放，
+   曾导致 AI 回答不随字体大小设置变化而用户气泡变化） */
+.markdown-body{font-size:.7rem;line-height:1.85;color:var(--color-textSecondary);overflow-wrap:anywhere}
 .markdown-body h1,.markdown-body h2,.markdown-body h3{color:var(--color-textPrimary);line-height:1.35;margin:1.2em 0 .55em;font-weight:700;font-family:var(--font-family-serif)}
-.markdown-body h1{font-size:21px}.markdown-body h2{font-size:18px}.markdown-body h3{font-size:16px}
+.markdown-body h1{font-size:1.05rem}.markdown-body h2{font-size:.9rem}.markdown-body h3{font-size:.8rem}
 .markdown-body p{margin:0 0 .9em}
 .markdown-body ul,.markdown-body ol{padding-left:1.5em;margin:0 0 1em}
 .markdown-body li{margin:.3em 0}

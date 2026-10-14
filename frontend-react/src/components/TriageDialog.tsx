@@ -164,11 +164,13 @@ export default function TriageDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* 内联 transform 覆盖默认的 -translate-y-1/2：否则 top:5vh 配 translateY(-50%) 会把头部顶出视口。
+      {/* Tailwind v4 的 -translate-x-1/2/-translate-y-1/2 生成独立 translate 属性（非 transform），
+          内联 transform 只会与之叠加（水平双倍左移 + 垂直仍上移一半，弹窗被顶出视口顶部）。
+          必须用内联 translate 属性覆盖：只保留水平居中，垂直不动（top:5vh 已定位）。
           hideClose：头部已自带春分谱关闭钮，隐藏 DialogContent 右上角自动关闭钮，避免出现两个“关闭”。 */}
       <DialogContent
         className="triage-dialog-content"
-        style={{ maxWidth: 'min(920px, 94vw)', top: '5vh', transform: 'translateX(-50%)' }}
+        style={{ maxWidth: 'min(920px, 94vw)', top: '5vh', translate: 'translateX(-50%)' }}
         hideClose
       >
         <DialogHeader>

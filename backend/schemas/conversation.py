@@ -40,6 +40,8 @@ class ConversationResponse(ConversationBase):
 
     consultation_mode: str = "free"
     intake_state_json: Optional[str] = None
+    tokens_used: int = 0
+    username: Optional[str] = None
 
     class Config:
         from_attributes = True
